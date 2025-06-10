@@ -1,0 +1,9 @@
+# In .coderabbit.yaml - enable reviews for feature branches
+reviews:
+  auto_review:
+    enabled: true
+    base_branches:
+      - main
+      - develop
+      - "feature/*"
+      - "fix/*"

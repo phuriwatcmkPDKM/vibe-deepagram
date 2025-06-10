@@ -1,3 +1,31 @@
+<script setup lang="ts">
+import type { DatabaseType } from "~/types/schema";
+
+const schemaStore = useSchemaStore();
+const { tables, relationships } = storeToRefs(schemaStore);
+
+const selectedDbType = ref<DatabaseType>("postgresql");
+const showImportModal = ref<boolean>(false);
+
+const loadSample = (): void => {
+  schemaStore.parseSchemaData(schemaStore.getSampleData());
+};
+
+const clearAll = (): void => {
+  schemaStore.clearSchema();
+};
+
+const handleImport = (): void => {
+  // Additional handling after import if needed
+  console.log("Schema imported successfully");
+};
+
+// Set page title
+useHead({
+  title: "Database Schema Canvas - Nuxt 3",
+});
+</script>
+
 <template>
   <div class="h-screen flex flex-col bg-gray-50">
     <!-- Toolbar -->
@@ -50,31 +78,3 @@
     />
   </div>
 </template>
-
-<script setup lang="ts">
-import type { DatabaseType } from "~/types/schema";
-
-const schemaStore = useSchemaStore();
-const { tables, relationships } = storeToRefs(schemaStore);
-
-const selectedDbType = ref<DatabaseType>("postgresql");
-const showImportModal = ref<boolean>(false);
-
-const loadSample = (): void => {
-  schemaStore.parseSchemaData(schemaStore.getSampleData());
-};
-
-const clearAll = (): void => {
-  schemaStore.clearSchema();
-};
-
-const handleImport = (): void => {
-  // Additional handling after import if needed
-  console.log("Schema imported successfully");
-};
-
-// Set page title
-useHead({
-  title: "Database Schema Canvas - Nuxt 3",
-});
-</script>

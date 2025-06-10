@@ -5,3 +5,8 @@
     @apply font-sans antialiased;
   }
 }
+
+@theme {
+  --color-primary: var(--ci-primary);
+  --color-secondary: var(--ci-secondary);
+}

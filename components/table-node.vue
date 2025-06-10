@@ -68,7 +68,7 @@ watch([mouseX, mouseY, isPressed], ([newX, newY, pressed]) => {
       width: `${table.width}px`,
     }"
     class="absolute bg-white border-2 border-gray-200 rounded-lg shadow-lg hover:shadow-xl transition-shadow cursor-move select-none z-10"
-    :class="{ 'border-primary-500 shadow-primary-100': isSelected }"
+    :class="{ 'border-primary/60 shadow-primary-100': isSelected }"
     @mousedown="startDrag"
   >
     <!-- Table Header -->

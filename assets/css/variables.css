@@ -1,0 +1,5 @@
+:root {
+  /* CI */
+  --ci-primary: oklch(.34 .0504 229.21)
+  --ci-secondary: oklch(67.17% 0.2205 37.86);
+}

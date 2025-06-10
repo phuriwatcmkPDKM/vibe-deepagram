@@ -1,14 +1,22 @@
 # .github/workflows/ai-review.yml
-name: AI Code Review
+name: Code Quality Check
 on: [pull_request]
 
 jobs:
   review:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - name: Run AI Review
-        uses: github/super-linter@v4
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Full git history for better analysis
+
+      - name: Run Super-Linter
+        uses: github/super-linter@v6
         env:
           DEFAULT_BRANCH: main
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VALIDATE_ALL_CODEBASE: true # Only validate changed files
+          VALIDATE_TYPESCRIPT_ES: true
+          VALIDATE_VUE: true
+          VALIDATE_CSS: true
+          VALIDATE_MARKDOWN: true

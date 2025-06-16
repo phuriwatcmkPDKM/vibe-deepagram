@@ -1,27 +1,195 @@
 <script setup lang="ts">
 import type { Relationship, DragMoveEvent, Table } from "~/types/schema";
 
-interface PanStart {
-  x: number;
-  y: number;
-}
-
-interface CanvasSize {
-  width: number;
-  height: number;
-}
-
 const schemaStore = useSchemaStore();
 const { tables, relationships, canvas } = storeToRefs(schemaStore);
 
-const canvasRef = ref<HTMLElement | null>(null);
-const canvasSize = reactive<CanvasSize>({ width: 6000, height: 6000 });
+// Refs
+const containerRef = ref<HTMLElement>();
+const viewportRef = ref<HTMLElement>();
 
-const { pressed: isPressed } = useMousePressed();
-const { x: mouseX, y: mouseY } = useMouse();
+// State
+const isDragging = ref(false);
+const dragStart = ref({ x: 0, y: 0 });
+const lastPanPoint = ref({ x: 0, y: 0 });
 
-let panStart: PanStart = { x: 0, y: 0 };
-let isPanning = false;
+// Computed
+const transform = computed(() => {
+  return `translate(${canvas.value.panX}px, ${canvas.value.panY}px) scale(${canvas.value.scale})`;
+});
+
+const gridPattern = computed(() => {
+  const size = 20 * canvas.value.scale;
+  const x = canvas.value.panX % size;
+  const y = canvas.value.panY % size;
+
+  return {
+    size: Math.max(size, 10),
+    x: x < 0 ? x + size : x,
+    y: y < 0 ? y + size : y,
+    opacity: canvas.value.scale > 0.5 ? 0.6 : 0.3,
+  };
+});
+
+// Mouse handlers
+const onMouseDown = (event: MouseEvent) => {
+  const target = event.target as HTMLElement;
+
+  // Don't pan if clicking on a table
+  if (target.closest("[data-table]")) {
+    return;
+  }
+
+  event.preventDefault();
+  isDragging.value = true;
+  schemaStore.setPanState(true);
+
+  dragStart.value = {
+    x: event.clientX - canvas.value.panX,
+    y: event.clientY - canvas.value.panY,
+  };
+
+  lastPanPoint.value = {
+    x: event.clientX,
+    y: event.clientY,
+  };
+
+  // Clear selection
+  schemaStore.setSelectedTable(null);
+
+  // Add global mouse events
+  document.addEventListener("mousemove", onMouseMove);
+  document.addEventListener("mouseup", onMouseUp);
+};
+
+const onMouseMove = (event: MouseEvent) => {
+  if (!isDragging.value) return;
+
+  event.preventDefault();
+
+  const deltaX = event.clientX - lastPanPoint.value.x;
+  const deltaY = event.clientY - lastPanPoint.value.y;
+
+  const newPanX = canvas.value.panX + deltaX;
+  const newPanY = canvas.value.panY + deltaY;
+
+  schemaStore.updateCanvasPan(newPanX, newPanY);
+
+  lastPanPoint.value = {
+    x: event.clientX,
+    y: event.clientY,
+  };
+};
+
+const onMouseUp = () => {
+  isDragging.value = false;
+  schemaStore.setPanState(false);
+
+  // Remove global mouse events
+  document.removeEventListener("mousemove", onMouseMove);
+  document.removeEventListener("mouseup", onMouseUp);
+};
+
+// Wheel handler for zooming
+const onWheel = (event: WheelEvent) => {
+  event.preventDefault();
+
+  if (!containerRef.value) return;
+
+  const rect = containerRef.value.getBoundingClientRect();
+  const centerX = rect.width / 2;
+  const centerY = rect.height / 2;
+
+  // Use center point for zoom
+  const pointX = centerX;
+  const pointY = centerY;
+
+  const scaleDelta = -event.deltaY * 0.01;
+  const newScale = Math.min(
+    Math.max(canvas.value.scale + scaleDelta * canvas.value.scale, 0.1),
+    3
+  );
+
+  if (newScale !== canvas.value.scale) {
+    const scaleRatio = newScale / canvas.value.scale;
+
+    const newPanX = pointX - (pointX - canvas.value.panX) * scaleRatio;
+    const newPanY = pointY - (pointY - canvas.value.panY) * scaleRatio;
+
+    schemaStore.updateCanvasState({
+      scale: newScale,
+      panX: newPanX,
+      panY: newPanY,
+    });
+  }
+};
+
+// Table handlers
+const handleTableDragStart = (tableId: string) => {
+  console.log("Canvas received dragStart", tableId);
+  schemaStore.setSelectedTable(tableId);
+  schemaStore.setDragState(true);
+};
+
+const handleTableDragMove = ({ tableId, x, y }: DragMoveEvent) => {
+  console.log("Canvas received dragMove", { tableId, x, y });
+  schemaStore.updateTablePosition(tableId, x, y);
+};
+
+const handleTableDragEnd = () => {
+  console.log("Canvas received dragEnd");
+  schemaStore.setDragState(false);
+};
+
+// Zoom controls
+const zoomIn = () => {
+  const newScale = Math.min(canvas.value.scale * 1.2, 3);
+  schemaStore.updateCanvasScale(newScale);
+};
+
+const zoomOut = () => {
+  const newScale = Math.max(canvas.value.scale * 0.8, 0.1);
+  schemaStore.updateCanvasScale(newScale);
+};
+
+const resetZoom = () => {
+  schemaStore.updateCanvasState({ scale: 1, panX: 0, panY: 0 });
+};
+
+const fitToScreen = () => {
+  if (tables.value.length === 0) {
+    resetZoom();
+    return;
+  }
+
+  const padding = 100;
+  let minX = Infinity,
+    minY = Infinity,
+    maxX = -Infinity,
+    maxY = -Infinity;
+
+  tables.value.forEach((table: Table) => {
+    minX = Math.min(minX, table.x);
+    minY = Math.min(minY, table.y);
+    maxX = Math.max(maxX, table.x + table.width);
+    maxY = Math.max(maxY, table.y + table.height);
+  });
+
+  const contentWidth = maxX - minX + padding * 2;
+  const contentHeight = maxY - minY + padding * 2;
+  const containerRect = containerRef.value?.getBoundingClientRect();
+
+  if (containerRect) {
+    const scaleX = containerRect.width / contentWidth;
+    const scaleY = containerRect.height / contentHeight;
+    const newScale = Math.min(scaleX, scaleY, 1);
+
+    const panX = (containerRect.width - (maxX + minX) * newScale) / 2;
+    const panY = (containerRect.height - (maxY + minY) * newScale) / 2;
+
+    schemaStore.updateCanvasState({ scale: newScale, panX, panY });
+  }
+};
 
 // Keyboard shortcuts
 onKeyStroke(["+", "="], (e) => {
@@ -52,7 +220,114 @@ onKeyStroke("1", (e) => {
   }
 });
 
-// Mini-map calculations
+// Optimized relationship path calculation with improved connection logic
+const relationshipPaths = computed(() => {
+  const paths = new Map<string, string>();
+  
+  // Create lookup maps for better performance
+  const tableMap = new Map(tables.value.map(t => [t.name, t]));
+
+  relationships.value.forEach((relationship) => {
+    const fromTable = tableMap.get(relationship.fromTable);
+    const toTable = tableMap.get(relationship.toTable);
+
+    if (!fromTable || !toTable) {
+      paths.set(relationship.id, "");
+      return;
+    }
+
+    // Find column indices with fallback
+    const fromColumnIndex = Math.max(0, 
+      fromTable.columns.findIndex(c => c.name === relationship.fromColumn)
+    );
+    const toColumnIndex = Math.max(0,
+      toTable.columns.findIndex(c => c.name === relationship.toColumn)
+    );
+
+    // Calculate precise connection points based on updated row height (42px)
+    const headerHeight = 40;
+    const rowHeight = 42;
+    const rowCenter = rowHeight / 2;
+    
+    const fromY = fromTable.y + headerHeight + (fromColumnIndex * rowHeight) + rowCenter;
+    const toY = toTable.y + headerHeight + (toColumnIndex * rowHeight) + rowCenter;
+
+    // Intelligent connection point selection
+    const fromCenter = { x: fromTable.x + fromTable.width / 2, y: fromY };
+    const toCenter = { x: toTable.x + toTable.width / 2, y: toY };
+    
+    let fromX: number, toX: number;
+    let fromSide: 'left' | 'right' | 'top' | 'bottom';
+    let toSide: 'left' | 'right' | 'top' | 'bottom';
+
+    // Calculate best connection sides based on table positions
+    const deltaX = toCenter.x - fromCenter.x;
+    const deltaY = toCenter.y - fromCenter.y;
+    
+    // Determine optimal connection sides
+    if (Math.abs(deltaX) > Math.abs(deltaY)) {
+      // Horizontal connection preferred
+      if (deltaX > 0) {
+        // From left to right
+        fromSide = 'right';
+        toSide = 'left';
+        fromX = fromTable.x + fromTable.width;
+        toX = toTable.x;
+      } else {
+        // From right to left
+        fromSide = 'left';
+        toSide = 'right';
+        fromX = fromTable.x;
+        toX = toTable.x + toTable.width;
+      }
+    } else {
+      // Vertical connection preferred for closer tables
+      if (deltaY > 0) {
+        // From top to bottom
+        fromSide = 'bottom';
+        toSide = 'top';
+        fromX = fromCenter.x;
+        toX = toCenter.x;
+      } else {
+        // From bottom to top
+        fromSide = 'top';
+        toSide = 'bottom';
+        fromX = fromCenter.x;
+        toX = toCenter.x;
+      }
+    }
+
+    // Generate smooth path based on connection type
+    let path: string;
+    
+    if (fromSide === 'right' || fromSide === 'left') {
+      // Horizontal bezier curve
+      const horizontalOffset = Math.min(Math.abs(deltaX) * 0.4, 80);
+      const control1X = fromX + (fromSide === 'right' ? horizontalOffset : -horizontalOffset);
+      const control2X = toX + (toSide === 'left' ? -horizontalOffset : horizontalOffset);
+      
+      path = `M${fromX},${fromY}C${control1X},${fromY},${control2X},${toY},${toX},${toY}`;
+    } else {
+      // Vertical bezier curve
+      const verticalOffset = Math.min(Math.abs(deltaY) * 0.4, 60);
+      const control1Y = fromY + (fromSide === 'bottom' ? verticalOffset : -verticalOffset);
+      const control2Y = toY + (toSide === 'top' ? -verticalOffset : verticalOffset);
+      
+      path = `M${fromX},${fromY}C${fromX},${control1Y},${toX},${control2Y},${toX},${toY}`;
+    }
+
+    paths.set(relationship.id, path);
+  });
+
+  return paths;
+});
+
+// Optimized path getter with fallback
+const getRelationshipPath = (relationship: Relationship): string => {
+  return relationshipPaths.value.get(relationship.id) || "";
+};
+
+// Mini-map
 const minimapViewBox = computed(() => {
   if (tables.value.length === 0) return "0 0 100 100";
 
@@ -74,326 +349,131 @@ const minimapViewBox = computed(() => {
 });
 
 const viewportRect = computed(() => {
-  if (!canvasRef.value) return { x: 0, y: 0, width: 100, height: 100 };
+  if (!containerRef.value) return { x: 0, y: 0, width: 100, height: 100 };
 
-  const rect = canvasRef.value.getBoundingClientRect();
-  const scale = canvas.value.scale;
-  const panX = canvas.value.panX;
-  const panY = canvas.value.panY;
-
+  const rect = containerRef.value.getBoundingClientRect();
   return {
-    x: -panX / scale,
-    y: -panY / scale,
-    width: rect.width / scale,
-    height: rect.height / scale,
+    x: -canvas.value.panX / canvas.value.scale,
+    y: -canvas.value.panY / canvas.value.scale,
+    width: rect.width / canvas.value.scale,
+    height: rect.height / canvas.value.scale,
   };
 });
-
-const startPan = (event: MouseEvent): void => {
-  const target = event.target as HTMLElement;
-
-  // Don't start panning if clicking on a table element
-  if (
-    target.closest("table-node") ||
-    target.getAttribute("data-table-element")
-  ) {
-    return;
-  }
-
-  if (
-    target === canvasRef.value ||
-    target.closest(".schema-canvas") === event.currentTarget
-  ) {
-    isPanning = true;
-    panStart = {
-      x: event.clientX - canvas.value.panX,
-      y: event.clientY - canvas.value.panY,
-    };
-
-    // Clear table selection when clicking on canvas
-    schemaStore.setSelectedTable(null);
-  }
-};
-
-watch(
-  [mouseX, mouseY, isPressed],
-  ([newX, newY, pressed]: [number, number, boolean]) => {
-    if (!pressed) {
-      isPanning = false;
-      return;
-    }
-
-    if (isPanning) {
-      const panX = newX - panStart.x;
-      const panY = newY - panStart.y;
-      schemaStore.updateCanvasPan(panX, panY);
-    }
-  }
-);
-
-const handleWheel = (event: WheelEvent): void => {
-  const rect = canvasRef.value?.getBoundingClientRect();
-  if (!rect) return;
-
-  // Smooth zoom with finer control
-  const zoomSensitivity = 0.05;
-  const zoomFactor =
-    1 + (event.deltaY > 0 ? -zoomSensitivity : zoomSensitivity);
-  const newScale = Math.max(0.1, Math.min(5, canvas.value.scale * zoomFactor));
-
-  if (newScale !== canvas.value.scale) {
-    const mouseX = event.clientX - rect.left;
-    const mouseY = event.clientY - rect.top;
-
-    const scaleDiff = newScale - canvas.value.scale;
-    const panX =
-      canvas.value.panX -
-      ((mouseX - canvas.value.panX) * scaleDiff) / canvas.value.scale;
-    const panY =
-      canvas.value.panY -
-      ((mouseY - canvas.value.panY) * scaleDiff) / canvas.value.scale;
-
-    schemaStore.updateCanvasState({ scale: newScale, panX, panY });
-  }
-};
-
-const handleTableDragStart = (tableId: string): void => {
-  schemaStore.setSelectedTable(tableId);
-  schemaStore.setDragState(true);
-};
-
-const handleTableDragMove = ({ tableId, x, y }: DragMoveEvent): void => {
-  schemaStore.updateTablePosition(tableId, x, y);
-};
-
-const handleTableDragEnd = (): void => {
-  schemaStore.setDragState(false);
-};
-
-const zoomIn = (): void => {
-  const newScale = Math.min(5, canvas.value.scale * 1.3);
-  schemaStore.updateCanvasScale(newScale);
-};
-
-const zoomOut = (): void => {
-  const newScale = Math.max(0.1, canvas.value.scale * 0.7);
-  schemaStore.updateCanvasScale(newScale);
-};
-
-const resetZoom = (): void => {
-  schemaStore.updateCanvasState({ scale: 1, panX: 0, panY: 0 });
-};
-
-const fitToScreen = (): void => {
-  if (tables.value.length === 0) {
-    resetZoom();
-    return;
-  }
-
-  const padding = 100;
-  let minX = Infinity,
-    minY = Infinity,
-    maxX = -Infinity,
-    maxY = -Infinity;
-
-  tables.value.forEach((table: Table) => {
-    minX = Math.min(minX, table.x);
-    minY = Math.min(minY, table.y);
-    maxX = Math.max(maxX, table.x + table.width);
-    maxY = Math.max(maxY, table.y + table.height);
-  });
-
-  const contentWidth = maxX - minX + padding * 2;
-  const contentHeight = maxY - minY + padding * 2;
-  const containerRect = canvasRef.value?.getBoundingClientRect();
-
-  if (containerRect) {
-    const scaleX = containerRect.width / contentWidth;
-    const scaleY = containerRect.height / contentHeight;
-    const newScale = Math.min(scaleX, scaleY, 1);
-
-    const panX = (containerRect.width - (maxX + minX) * newScale) / 2;
-    const panY = (containerRect.height - (maxY + minY) * newScale) / 2;
-
-    schemaStore.updateCanvasState({ scale: newScale, panX, panY });
-  }
-};
-
-// Memoized relationship path calculation for performance
-const relationshipPaths = computed(() => {
-  const paths = new Map<string, string>();
-
-  relationships.value.forEach((relationship) => {
-    const fromTable = tables.value.find(
-      (t: Table) => t.name === relationship.fromTable
-    );
-    const toTable = tables.value.find(
-      (t: Table) => t.name === relationship.toTable
-    );
-
-    if (!fromTable || !toTable) {
-      paths.set(relationship.id, "");
-      return;
-    }
-
-    const fromColumnIndex = fromTable.columns.findIndex(
-      (c) => c.name === relationship.fromColumn
-    );
-    const toColumnIndex = toTable.columns.findIndex(
-      (c) => c.name === relationship.toColumn
-    );
-
-    const fromY = fromTable.y + 40 + fromColumnIndex * 32 + 16;
-    const toY = toTable.y + 40 + toColumnIndex * 32 + 16;
-
-    let fromX: number, toX: number;
-
-    if (fromTable.x + fromTable.width < toTable.x) {
-      fromX = fromTable.x + fromTable.width;
-      toX = toTable.x;
-    } else if (toTable.x + toTable.width < fromTable.x) {
-      fromX = fromTable.x;
-      toX = toTable.x + toTable.width;
-    } else {
-      fromX = fromTable.x + fromTable.width / 2;
-      toX = toTable.x + toTable.width / 2;
-    }
-
-    const midX = (fromX + toX) / 2;
-
-    // Simplified path for better performance
-    paths.set(
-      relationship.id,
-      `M${fromX},${fromY}C${midX},${fromY},${midX},${toY},${toX},${toY}`
-    );
-  });
-
-  return paths;
-});
-
-const getRelationshipPath = (relationship: Relationship): string => {
-  return relationshipPaths.value.get(relationship.id) || "";
-};
-
-onMounted(() => {
-  nextTick(() => {
-    if (canvasRef.value) {
-      const rect = canvasRef.value.getBoundingClientRect();
-      canvasSize.width = Math.max(rect.width, 6000);
-      canvasSize.height = Math.max(rect.height, 6000);
-    }
-  });
-
-  // Update canvas size on window resize
-  window.addEventListener("resize", () => {
-    if (canvasRef.value) {
-      const rect = canvasRef.value.getBoundingClientRect();
-      canvasSize.width = Math.max(rect.width, 6000);
-      canvasSize.height = Math.max(rect.height, 6000);
-    }
-  });
-});
 </script>
+
 <template>
-  <div class="relative w-full h-full overflow-hidden bg-gray-50 schema-canvas">
+  <div
+    ref="containerRef"
+    class="relative w-full h-full overflow-hidden bg-gray-50 select-none"
+    :class="{
+      'cursor-grab': !canvas.isDragging && !isDragging,
+      'cursor-grabbing': canvas.isDragging || isDragging,
+    }"
+    @mousedown="onMouseDown"
+    @wheel="onWheel"
+    @contextmenu.prevent
+  >
     <!-- Grid Background -->
     <div
-      class="absolute inset-0 opacity-60 pointer-events-none"
+      class="absolute inset-0 pointer-events-none"
       :style="{
-        backgroundImage: `
-          radial-gradient(circle, rgba(156, 163, 175, 0.2) 1px, transparent 1px),
-          linear-gradient(rgba(156, 163, 175, 0.1) 1px, transparent 1px),
-          linear-gradient(90deg, rgba(156, 163, 175, 0.1) 1px, transparent 1px)
-        `,
-        backgroundSize: `${20 * canvas.scale}px ${20 * canvas.scale}px, ${
-          20 * canvas.scale
-        }px ${20 * canvas.scale}px, ${20 * canvas.scale}px ${
-          20 * canvas.scale
-        }px`,
-        backgroundPosition: `${canvas.panX % (20 * canvas.scale)}px ${
-          canvas.panY % (20 * canvas.scale)
-        }px`,
-        backgroundColor: '#f9fafb',
-        transition: canvas.scale > 0.5 ? 'opacity 0.2s ease' : 'none',
+        backgroundImage: `radial-gradient(circle, rgba(156, 163, 175, 0.4) 1px, transparent 1px)`,
+        backgroundSize: `${gridPattern.size}px ${gridPattern.size}px`,
+        backgroundPosition: `${gridPattern.x}px ${gridPattern.y}px`,
+        opacity: gridPattern.opacity,
+        transition: 'opacity 0.2s ease',
       }"
     />
 
-    <!-- Canvas Container -->
+    <!-- Viewport -->
     <div
-      ref="canvasRef"
-      class="absolute inset-0 transition-none"
-      :class="{
-        'cursor-grab': !canvas.isDragging && !isPanning,
-        'cursor-grabbing': canvas.isDragging || isPanning,
-        'select-none': isPanning || canvas.isDragging,
-      }"
-      :style="{
-        transform: `translate(${canvas.panX}px, ${canvas.panY}px) scale(${canvas.scale})`,
-        willChange: canvas.isDragging || isPanning ? 'transform' : 'auto',
-      }"
-      data-canvas="true"
-      @mousedown="startPan"
-      @wheel.prevent="handleWheel"
-      @contextmenu.prevent
+      ref="viewportRef"
+      class="absolute inset-0 origin-top-left pointer-events-none"
+      :style="{ transform }"
     >
-      <!-- Relationship Lines SVG - Optimized for performance -->
+      <!-- Relationships SVG -->
       <svg
-        class="absolute inset-0 pointer-events-none z-0"
-        :width="canvasSize.width"
-        :height="canvasSize.height"
-        :viewBox="`0 0 ${canvasSize.width} ${canvasSize.height}`"
+        class="absolute inset-0 w-full h-full pointer-events-none"
         style="overflow: visible"
-        :style="{
-          willChange: canvas.isDragging || isPanning ? 'auto' : 'transform',
-          opacity: canvas.isDragging ? 0.7 : 1,
-          transition: canvas.isDragging ? 'none' : 'opacity 0.2s ease',
-        }"
       >
         <defs>
+          <!-- Standard arrow marker -->
           <marker
             id="arrowhead"
             markerWidth="8"
             markerHeight="6"
-            refX="8"
+            refX="7.5"
             refY="3"
             orient="auto"
             markerUnits="strokeWidth"
+            viewBox="0 0 8 6"
           >
-            <polygon points="0 0, 8 3, 0 6" fill="#3b82f6" />
+            <path
+              d="M0,0 L0,6 L8,3 z"
+              fill="#3b82f6"
+            />
+          </marker>
+          
+          <!-- Smaller arrow for zoomed out views -->
+          <marker
+            id="arrowhead-small"
+            markerWidth="6"
+            markerHeight="4"
+            refX="5.5"
+            refY="2"
+            orient="auto"
+            markerUnits="strokeWidth"
+            viewBox="0 0 6 4"
+          >
+            <path
+              d="M0,0 L0,4 L6,2 z"
+              fill="#3b82f6"
+            />
           </marker>
         </defs>
 
-        <g v-if="!canvas.isDragging || canvas.scale > 0.5">
+        <g v-if="canvas.scale > 0.1">
           <path
             v-for="relationship in relationships"
             :key="relationship.id"
             :d="getRelationshipPath(relationship)"
             stroke="#3b82f6"
-            :stroke-width="canvas.scale < 0.5 ? 1 : 2"
+            :stroke-width="Math.max(1, 3 / canvas.scale)"
             fill="none"
-            marker-end="url(#arrowhead)"
-            vector-effect="non-scaling-stroke"
-            :style="{
-              opacity: canvas.scale < 0.3 ? 0.6 : 1,
-            }"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            :marker-end="canvas.scale > 0.5 ? 'url(#arrowhead)' : 'url(#arrowhead-small)'"
+            :opacity="Math.max(0.5, Math.min(1, canvas.scale * 2))"
+            class="transition-opacity duration-200"
           />
         </g>
       </svg>
 
       <!-- Tables -->
       <template v-for="table in tables" :key="table.id">
-        <table-node
-          :table="table"
-          :is-selected="canvas.selectedTable === table.id"
-          :scale="canvas.scale"
-          @drag-start="handleTableDragStart"
-          @drag-move="handleTableDragMove"
-          @drag-end="handleTableDragEnd"
-        />
+        <div
+          :data-table="table.id"
+          class="absolute pointer-events-auto"
+          :style="{
+            left: `${table.x}px`,
+            top: `${table.y}px`,
+            width: `${table.width}px`,
+            height: `${table.height}px`,
+          }"
+        >
+          <table-node
+            :table="table"
+            :is-selected="canvas.selectedTable === table.id"
+            :scale="canvas.scale"
+            @drag-start="handleTableDragStart"
+            @drag-move="handleTableDragMove"
+            @drag-end="handleTableDragEnd"
+          />
+        </div>
       </template>
     </div>
 
-    <!-- Canvas Info Overlay -->
+    <!-- Canvas Info -->
     <div
       class="absolute top-4 left-4 bg-white/90 backdrop-blur-sm rounded-lg px-3 py-2 text-xs text-gray-600 shadow-sm z-20"
     >
@@ -438,7 +518,7 @@ onMounted(() => {
       </div>
     </div>
 
-    <!-- Mini-map (when zoomed out) -->
+    <!-- Mini-map -->
     <div
       v-if="canvas.scale < 0.5 && tables.length > 0"
       class="absolute top-4 right-4 w-48 h-32 bg-white/90 backdrop-blur-sm rounded-lg shadow-lg border border-gray-200 z-20 overflow-hidden"

@@ -18,57 +18,92 @@ const props = withDefaults(defineProps<Props>(), {
 
 const emit = defineEmits<Emits>();
 
-const { pressed: isPressed } = useMousePressed();
-const { x: mouseX, y: mouseY } = useMouse();
+// Computed height based on columns
+const calculatedHeight = computed(() => {
+  const headerHeight = 40; // Table header height
+  const rowHeight = 42; // Each column row height
+  return headerHeight + props.table.columns.length * rowHeight;
+});
 
-let dragOffset = { x: 0, y: 0 };
-let isDragging = false;
+// Dragging state
+const isDragging = ref(false);
+const dragStartPos = ref({ x: 0, y: 0 });
+const initialTablePos = ref({ x: 0, y: 0 });
 
 const startDrag = (event: MouseEvent): void => {
-  const rect = (event.currentTarget as HTMLElement).getBoundingClientRect();
-  dragOffset = {
-    x: event.clientX - rect.left,
-    y: event.clientY - rect.top,
-  };
-  isDragging = true;
+  console.log("Table drag started", props.table.id);
+  event.preventDefault();
+  event.stopPropagation();
+
+  isDragging.value = true;
+  dragStartPos.value = { x: event.clientX, y: event.clientY };
+  initialTablePos.value = { x: props.table.x, y: props.table.y };
+
   emit("dragStart", props.table.id);
+
+  // Add global event listeners
+  document.addEventListener("mousemove", onMouseMove);
+  document.addEventListener("mouseup", onMouseUp);
 };
 
-watch([mouseX, mouseY, isPressed], ([newX, newY, pressed]) => {
-  if (!pressed) {
-    if (isDragging) {
-      isDragging = false;
-      emit("dragEnd");
-    }
-    return;
-  }
+const onMouseMove = (event: MouseEvent) => {
+  if (!isDragging.value) return;
 
-  if (isDragging) {
-    const canvasRect = document
-      .querySelector(".schema-canvas")
-      ?.getBoundingClientRect();
-    if (canvasRect) {
-      const newTableX = newX - canvasRect.left - dragOffset.x;
-      const newTableY = newY - canvasRect.top - dragOffset.y;
+  console.log("Mouse move during drag");
+  event.preventDefault();
 
-      emit("dragMove", {
-        tableId: props.table.id,
-        x: newTableX,
-        y: newTableY,
-      });
-    }
-  }
-});
+  // Get current canvas state
+  const schemaStore = useSchemaStore();
+  const canvas = schemaStore.canvas;
+
+  // Calculate movement delta
+  const deltaX = event.clientX - dragStartPos.value.x;
+  const deltaY = event.clientY - dragStartPos.value.y;
+
+  // Scale delta by canvas zoom
+  const scaledDeltaX = deltaX / canvas.scale;
+  const scaledDeltaY = deltaY / canvas.scale;
+
+  // Calculate new position
+  const newX = initialTablePos.value.x + scaledDeltaX;
+  const newY = initialTablePos.value.y + scaledDeltaY;
+
+  console.log("Emitting dragMove", {
+    tableId: props.table.id,
+    x: newX,
+    y: newY,
+  });
+
+  emit("dragMove", {
+    tableId: props.table.id,
+    x: newX,
+    y: newY,
+  });
+};
+
+const onMouseUp = () => {
+  if (!isDragging.value) return;
+
+  console.log("Table drag ended");
+  isDragging.value = false;
+  emit("dragEnd");
+
+  // Remove global event listeners
+  document.removeEventListener("mousemove", onMouseMove);
+  document.removeEventListener("mouseup", onMouseUp);
+};
 </script>
 
 <template>
   <div
     :style="{
-      transform: `translate(${table.x}px, ${table.y}px)`,
       width: `${table.width}px`,
+      height: `${calculatedHeight}px`,
     }"
-    class="absolute bg-white border-2 border-gray-200 rounded-lg shadow-lg hover:shadow-xl transition-shadow cursor-move select-none z-10"
-    :class="{ 'border-primary/60 shadow-primary-100': isSelected }"
+    class="w-full h-full bg-white border-2 border-gray-200 rounded-lg shadow-lg hover:shadow-xl transition-shadow cursor-move select-none"
+    :class="{
+      'border-primary/60 shadow-primary-100 overflow-hidden': isSelected,
+    }"
     @mousedown="startDrag"
   >
     <!-- Table Header -->
@@ -119,7 +154,7 @@ watch([mouseX, mouseY, isPressed], ([newX, newY, pressed]) => {
         </div>
 
         <!-- Constraints -->
-        <div v-if="column.isUnique || column.isNotNull" class="flex gap-1 mt-1">
+        <!-- <div v-if="column.isUnique || column.isNotNull" class="flex gap-1 mt-1">
           <span
             v-if="column.isUnique"
             class="inline-flex px-1.5 py-0.5 text-xs font-medium text-blue-800 bg-blue-100 rounded"
@@ -132,7 +167,7 @@ watch([mouseX, mouseY, isPressed], ([newX, newY, pressed]) => {
           >
             NOT NULL
           </span>
-        </div>
+        </div> -->
       </div>
     </div>
   </div>

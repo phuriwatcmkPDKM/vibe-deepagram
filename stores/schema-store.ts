@@ -42,7 +42,22 @@ export const useSchemaStore = defineStore("schema", () => {
     if (table) {
       table.x = x;
       table.y = y;
+      // Ensure height is updated based on columns
+      table.height = 40 + table.columns.length * 32;
     }
+  };
+
+  const updateTableHeight = (tableId: string): void => {
+    const table = tables.value.find((t) => t.id === tableId);
+    if (table) {
+      table.height = 40 + table.columns.length * 32;
+    }
+  };
+
+  const recalculateAllTableHeights = (): void => {
+    tables.value.forEach(table => {
+      table.height = 40 + table.columns.length * 32;
+    });
   };
 
   const addRelationship = (
@@ -214,6 +229,8 @@ database,public,posts,created_at,5,timestamp,,DEFAULT NOW(),,,`;
     canvas: readonly(canvas),
     addTable,
     updateTablePosition,
+    updateTableHeight,
+    recalculateAllTableHeights,
     addRelationship,
     updateCanvasPan,
     updateCanvasScale,

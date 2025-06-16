@@ -64,14 +64,41 @@ export const useSchemaStore = defineStore("schema", () => {
     fromTable: string,
     fromColumn: string,
     toTable: string,
-    toColumn: string
+    toColumn: string,
+    cardinality?: 'one-to-one' | 'one-to-many' | 'many-to-one' | 'many-to-many'
   ): void => {
+    // Auto-detect cardinality if not provided
+    let detectedCardinality = cardinality;
+    if (!detectedCardinality) {
+      const fromTableObj = tables.value.find(t => t.name === fromTable);
+      const toTableObj = tables.value.find(t => t.name === toTable);
+      
+      if (fromTableObj && toTableObj) {
+        const fromCol = fromTableObj.columns.find(c => c.name === fromColumn);
+        const toCol = toTableObj.columns.find(c => c.name === toColumn);
+        
+        // Simple heuristic: if either column is primary key, it's likely one-to-many
+        if (fromCol?.isPrimary && !toCol?.isPrimary) {
+          detectedCardinality = 'one-to-many';
+        } else if (!fromCol?.isPrimary && toCol?.isPrimary) {
+          detectedCardinality = 'many-to-one';
+        } else if (fromCol?.isPrimary && toCol?.isPrimary) {
+          detectedCardinality = 'one-to-one';
+        } else {
+          detectedCardinality = 'one-to-many'; // Default
+        }
+      } else {
+        detectedCardinality = 'one-to-many'; // Default
+      }
+    }
+
     const relationship: Relationship = {
       id: `${Date.now()}-${Math.random()}`,
       fromTable,
       fromColumn,
       toTable,
       toColumn,
+      cardinality: detectedCardinality,
     };
     relationships.value.push(relationship);
   };
@@ -186,19 +213,35 @@ export const useSchemaStore = defineStore("schema", () => {
   };
 
   const getSampleData = (): string => {
-    return `database,public,lut_provinces,id,1,uuid,,PRIMARY KEY,,,
-database,public,lut_provinces,name,2,varchar,255,NOT NULL,,,
-database,public,lut_provinces,code,3,varchar,10,UNIQUE,,,
-database,public,lut_provinces,created_at,4,timestamp,,DEFAULT NOW(),,,
+    return `database,public,countries,id,1,uuid,,PRIMARY KEY,,,
+database,public,countries,name,2,varchar,255,NOT NULL,,,
+database,public,countries,code,3,varchar,2,UNIQUE,,,
+database,public,provinces,id,1,uuid,,PRIMARY KEY,,,
+database,public,provinces,name,2,varchar,255,NOT NULL,,,
+database,public,provinces,country_id,3,uuid,,FOREIGN KEY,countries,id,
 database,public,users,id,1,uuid,,PRIMARY KEY,,,
-database,public,users,name,2,varchar,255,NOT NULL,,,
-database,public,users,email,3,varchar,255,UNIQUE,,,
-database,public,users,province_id,4,uuid,,FOREIGN KEY,lut_provinces,id,
+database,public,users,email,2,varchar,255,UNIQUE,,,
+database,public,users,name,3,varchar,255,NOT NULL,,,
+database,public,users,province_id,4,uuid,,FOREIGN KEY,provinces,id,
+database,public,user_profiles,user_id,1,uuid,,PRIMARY KEY FOREIGN KEY,users,id,
+database,public,user_profiles,bio,2,text,,,,,
+database,public,user_profiles,avatar_url,3,varchar,500,,,,
+database,public,user_profiles,created_at,4,timestamp,,DEFAULT NOW(),,,
 database,public,posts,id,1,uuid,,PRIMARY KEY,,,
 database,public,posts,title,2,varchar,500,NOT NULL,,,
 database,public,posts,content,3,text,,,,,
-database,public,posts,user_id,4,uuid,,FOREIGN KEY,users,id,
-database,public,posts,created_at,5,timestamp,,DEFAULT NOW(),,,`;
+database,public,posts,author_id,4,uuid,,FOREIGN KEY,users,id,
+database,public,posts,created_at,5,timestamp,,DEFAULT NOW(),,,
+database,public,categories,id,1,uuid,,PRIMARY KEY,,,
+database,public,categories,name,2,varchar,255,NOT NULL,,,
+database,public,categories,description,3,text,,,,,
+database,public,post_categories,post_id,1,uuid,,FOREIGN KEY,posts,id,
+database,public,post_categories,category_id,2,uuid,,FOREIGN KEY,categories,id,
+database,public,comments,id,1,uuid,,PRIMARY KEY,,,
+database,public,comments,content,2,text,NOT NULL,,,
+database,public,comments,post_id,3,uuid,,FOREIGN KEY,posts,id,
+database,public,comments,author_id,4,uuid,,FOREIGN KEY,users,id,
+database,public,comments,created_at,5,timestamp,,DEFAULT NOW(),,,`;
   };
 
   const deleteTable = (tableId: string): void => {

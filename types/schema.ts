@@ -26,6 +26,7 @@ export interface Relationship {
   fromColumn: string;
   toTable: string;
   toColumn: string;
+  cardinality?: 'one-to-one' | 'one-to-many' | 'many-to-one' | 'many-to-many';
 }
 
 export interface CanvasState {

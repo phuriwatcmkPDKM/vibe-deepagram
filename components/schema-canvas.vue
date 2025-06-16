@@ -327,6 +327,85 @@ const getRelationshipPath = (relationship: Relationship): string => {
   return relationshipPaths.value.get(relationship.id) || "";
 };
 
+// Get cardinality label for a specific side of the relationship
+const getCardinalityLabel = (relationship: Relationship, side: 'from' | 'to'): string => {
+  const cardinality = relationship.cardinality || 'one-to-many';
+  
+  switch (cardinality) {
+    case 'one-to-one':
+      return '1';
+    case 'one-to-many':
+      return side === 'from' ? '1' : 'N';
+    case 'many-to-one':
+      return side === 'from' ? 'M' : '1';
+    case 'many-to-many':
+      return side === 'from' ? 'M' : 'N';
+    default:
+      return side === 'from' ? '1' : 'N';
+  }
+};
+
+// Get position for cardinality label on the relationship line
+const getCardinalityPosition = (relationship: Relationship, side: 'from' | 'to'): { x: number; y: number } => {
+  const fromTable = tables.value.find(t => t.name === relationship.fromTable);
+  const toTable = tables.value.find(t => t.name === relationship.toTable);
+
+  if (!fromTable || !toTable) {
+    return { x: 0, y: 0 };
+  }
+
+  const fromColumnIndex = Math.max(0, 
+    fromTable.columns.findIndex(c => c.name === relationship.fromColumn)
+  );
+  const toColumnIndex = Math.max(0,
+    toTable.columns.findIndex(c => c.name === relationship.toColumn)
+  );
+
+  // Calculate connection points (same as in relationshipPaths)
+  const headerHeight = 40;
+  const rowHeight = 42;
+  const rowCenter = rowHeight / 2;
+  
+  const fromY = fromTable.y + headerHeight + (fromColumnIndex * rowHeight) + rowCenter;
+  const toY = toTable.y + headerHeight + (toColumnIndex * rowHeight) + rowCenter;
+
+  const fromCenter = { x: fromTable.x + fromTable.width / 2, y: fromY };
+  const toCenter = { x: toTable.x + toTable.width / 2, y: toY };
+  
+  let fromX: number, toX: number;
+  const deltaX = toCenter.x - fromCenter.x;
+  const deltaY = toCenter.y - fromCenter.y;
+
+  // Determine connection points (same logic as relationshipPaths)
+  if (Math.abs(deltaX) > Math.abs(deltaY)) {
+    if (deltaX > 0) {
+      fromX = fromTable.x + fromTable.width;
+      toX = toTable.x;
+    } else {
+      fromX = fromTable.x;
+      toX = toTable.x + toTable.width;
+    }
+  } else {
+    fromX = fromCenter.x;
+    toX = toCenter.x;
+  }
+
+  // Position labels near the tables (20% from each end)
+  const labelOffset = 0.2;
+  
+  if (side === 'from') {
+    return {
+      x: fromX + (toX - fromX) * labelOffset,
+      y: fromY + (toY - fromY) * labelOffset
+    };
+  } else {
+    return {
+      x: fromX + (toX - fromX) * (1 - labelOffset),
+      y: fromY + (toY - fromY) * (1 - labelOffset)
+    };
+  }
+};
+
 // Mini-map
 const minimapViewBox = computed(() => {
   if (tables.value.length === 0) return "0 0 100 100";
@@ -397,42 +476,126 @@ const viewportRect = computed(() => {
         style="overflow: visible"
       >
         <defs>
-          <!-- Standard arrow marker -->
+          <!-- One-to-One: "1" symbol -->
           <marker
-            id="arrowhead"
-            markerWidth="8"
-            markerHeight="6"
-            refX="7.5"
-            refY="3"
+            id="one-to-one"
+            markerWidth="16"
+            markerHeight="12"
+            refX="8"
+            refY="6"
             orient="auto"
             markerUnits="strokeWidth"
-            viewBox="0 0 8 6"
+            viewBox="0 0 16 12"
           >
-            <path
-              d="M0,0 L0,6 L8,3 z"
-              fill="#3b82f6"
-            />
+            <rect x="2" y="2" width="12" height="8" fill="white" stroke="#3b82f6" stroke-width="1" rx="2" />
+            <text x="8" y="8" text-anchor="middle" font-family="Arial, sans-serif" font-size="7" font-weight="bold" fill="#3b82f6">1</text>
           </marker>
-          
-          <!-- Smaller arrow for zoomed out views -->
+
+          <!-- One-to-Many: "N" symbol -->
           <marker
-            id="arrowhead-small"
-            markerWidth="6"
-            markerHeight="4"
-            refX="5.5"
-            refY="2"
+            id="one-to-many"
+            markerWidth="16"
+            markerHeight="12"
+            refX="8"
+            refY="6"
             orient="auto"
             markerUnits="strokeWidth"
-            viewBox="0 0 6 4"
+            viewBox="0 0 16 12"
           >
-            <path
-              d="M0,0 L0,4 L6,2 z"
-              fill="#3b82f6"
-            />
+            <rect x="2" y="2" width="12" height="8" fill="white" stroke="#3b82f6" stroke-width="1" rx="2" />
+            <text x="8" y="8" text-anchor="middle" font-family="Arial, sans-serif" font-size="7" font-weight="bold" fill="#3b82f6">N</text>
+          </marker>
+
+          <!-- Many-to-One: "M" symbol -->
+          <marker
+            id="many-to-one"
+            markerWidth="16"
+            markerHeight="12"
+            refX="8"
+            refY="6"
+            orient="auto"
+            markerUnits="strokeWidth"
+            viewBox="0 0 16 12"
+          >
+            <rect x="2" y="2" width="12" height="8" fill="white" stroke="#3b82f6" stroke-width="1" rx="2" />
+            <text x="8" y="8" text-anchor="middle" font-family="Arial, sans-serif" font-size="7" font-weight="bold" fill="#3b82f6">M</text>
+          </marker>
+
+          <!-- Many-to-Many: "M:N" symbol -->
+          <marker
+            id="many-to-many"
+            markerWidth="20"
+            markerHeight="12"
+            refX="10"
+            refY="6"
+            orient="auto"
+            markerUnits="strokeWidth"
+            viewBox="0 0 20 12"
+          >
+            <rect x="1" y="2" width="18" height="8" fill="white" stroke="#3b82f6" stroke-width="1" rx="2" />
+            <text x="10" y="8" text-anchor="middle" font-family="Arial, sans-serif" font-size="6" font-weight="bold" fill="#3b82f6">M:N</text>
+          </marker>
+
+          <!-- Small versions for zoomed out views -->
+          <marker
+            id="one-to-one-small"
+            markerWidth="12"
+            markerHeight="8"
+            refX="6"
+            refY="4"
+            orient="auto"
+            markerUnits="strokeWidth"
+            viewBox="0 0 12 8"
+          >
+            <rect x="1" y="1" width="10" height="6" fill="white" stroke="#3b82f6" stroke-width="0.8" rx="1" />
+            <text x="6" y="5.5" text-anchor="middle" font-family="Arial, sans-serif" font-size="5" font-weight="bold" fill="#3b82f6">1</text>
+          </marker>
+
+          <marker
+            id="one-to-many-small"
+            markerWidth="12"
+            markerHeight="8"
+            refX="6"
+            refY="4"
+            orient="auto"
+            markerUnits="strokeWidth"
+            viewBox="0 0 12 8"
+          >
+            <rect x="1" y="1" width="10" height="6" fill="white" stroke="#3b82f6" stroke-width="0.8" rx="1" />
+            <text x="6" y="5.5" text-anchor="middle" font-family="Arial, sans-serif" font-size="5" font-weight="bold" fill="#3b82f6">N</text>
+          </marker>
+
+          <marker
+            id="many-to-one-small"
+            markerWidth="12"
+            markerHeight="8"
+            refX="6"
+            refY="4"
+            orient="auto"
+            markerUnits="strokeWidth"
+            viewBox="0 0 12 8"
+          >
+            <rect x="1" y="1" width="10" height="6" fill="white" stroke="#3b82f6" stroke-width="0.8" rx="1" />
+            <text x="6" y="5.5" text-anchor="middle" font-family="Arial, sans-serif" font-size="5" font-weight="bold" fill="#3b82f6">M</text>
+          </marker>
+
+          <marker
+            id="many-to-many-small"
+            markerWidth="16"
+            markerHeight="8"
+            refX="8"
+            refY="4"
+            orient="auto"
+            markerUnits="strokeWidth"
+            viewBox="0 0 16 8"
+          >
+            <rect x="1" y="1" width="14" height="6" fill="white" stroke="#3b82f6" stroke-width="0.8" rx="1" />
+            <text x="8" y="5.5" text-anchor="middle" font-family="Arial, sans-serif" font-size="4.5" font-weight="bold" fill="#3b82f6">M:N</text>
           </marker>
         </defs>
 
         <g v-if="canvas.scale > 0.1">
+          <!-- Relationship lines without markers -->
           <path
             v-for="relationship in relationships"
             :key="relationship.id"
@@ -442,10 +605,46 @@ const viewportRect = computed(() => {
             fill="none"
             stroke-linecap="round"
             stroke-linejoin="round"
-            :marker-end="canvas.scale > 0.5 ? 'url(#arrowhead)' : 'url(#arrowhead-small)'"
             :opacity="Math.max(0.5, Math.min(1, canvas.scale * 2))"
             class="transition-opacity duration-200"
           />
+          
+          <!-- Cardinality labels on lines -->
+          <g v-for="relationship in relationships" :key="`label-${relationship.id}`">
+            <text
+              v-if="getCardinalityLabel(relationship, 'from')"
+              :x="getCardinalityPosition(relationship, 'from').x"
+              :y="getCardinalityPosition(relationship, 'from').y"
+              text-anchor="middle"
+              dominant-baseline="middle"
+              font-family="Arial, sans-serif"
+              :font-size="Math.max(10, 12 / canvas.scale)"
+              font-weight="bold"
+              fill="#3b82f6"
+              stroke="white"
+              :stroke-width="Math.max(2, 3 / canvas.scale)"
+              paint-order="stroke fill"
+            >
+              {{ getCardinalityLabel(relationship, 'from') }}
+            </text>
+            
+            <text
+              v-if="getCardinalityLabel(relationship, 'to')"
+              :x="getCardinalityPosition(relationship, 'to').x"
+              :y="getCardinalityPosition(relationship, 'to').y"
+              text-anchor="middle"
+              dominant-baseline="middle"
+              font-family="Arial, sans-serif"
+              :font-size="Math.max(10, 12 / canvas.scale)"
+              font-weight="bold"
+              fill="#3b82f6"
+              stroke="white"
+              :stroke-width="Math.max(2, 3 / canvas.scale)"
+              paint-order="stroke fill"
+            >
+              {{ getCardinalityLabel(relationship, 'to') }}
+            </text>
+          </g>
         </g>
       </svg>
 

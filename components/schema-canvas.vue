@@ -345,6 +345,24 @@ const getCardinalityLabel = (relationship: Relationship, side: 'from' | 'to'): s
   }
 };
 
+// Get IE-style marker for government mode
+const getIEMarker = (relationship: Relationship, side: 'from' | 'to'): string => {
+  const cardinality = relationship.cardinality || 'one-to-many';
+  
+  switch (cardinality) {
+    case 'one-to-one':
+      return 'ie-one-to-one'; // Single line both ends
+    case 'one-to-many':
+      return side === 'from' ? 'ie-one' : 'ie-many'; // Single line → crow's foot
+    case 'many-to-one':
+      return side === 'from' ? 'ie-many' : 'ie-one'; // Crow's foot → single line
+    case 'many-to-many':
+      return 'ie-many'; // Crow's foot both ends
+    default:
+      return side === 'from' ? 'ie-one' : 'ie-many';
+  }
+};
+
 // Get position for cardinality label on the relationship line
 const getCardinalityPosition = (relationship: Relationship, side: 'from' | 'to'): { x: number; y: number } => {
   const fromTable = tables.value.find(t => t.name === relationship.fromTable);
@@ -443,10 +461,12 @@ const viewportRect = computed(() => {
 <template>
   <div
     ref="containerRef"
-    class="relative w-full h-full overflow-hidden bg-gray-50 select-none"
+    class="relative w-full h-full overflow-hidden select-none"
     :class="{
       'cursor-grab': !canvas.isDragging && !isDragging,
       'cursor-grabbing': canvas.isDragging || isDragging,
+      'bg-gray-50': !canvas.isGovernmentMode,
+      'bg-blue-50': canvas.isGovernmentMode,
     }"
     @mousedown="onMouseDown"
     @wheel="onWheel"
@@ -456,7 +476,9 @@ const viewportRect = computed(() => {
     <div
       class="absolute inset-0 pointer-events-none"
       :style="{
-        backgroundImage: `radial-gradient(circle, rgba(156, 163, 175, 0.4) 1px, transparent 1px)`,
+        backgroundImage: canvas.isGovernmentMode 
+          ? `radial-gradient(circle, rgba(75, 85, 99, 0.3) 1px, transparent 1px)` 
+          : `radial-gradient(circle, rgba(156, 163, 175, 0.4) 1px, transparent 1px)`,
         backgroundSize: `${gridPattern.size}px ${gridPattern.size}px`,
         backgroundPosition: `${gridPattern.x}px ${gridPattern.y}px`,
         opacity: gridPattern.opacity,
@@ -476,7 +498,111 @@ const viewportRect = computed(() => {
         style="overflow: visible"
       >
         <defs>
-          <!-- One-to-One: "1" symbol -->
+          <!-- Information Engineering Style Markers for Government Mode -->
+          <!-- IE One to One (single line both ends) -->
+          <marker
+            id="ie-one-to-one"
+            markerWidth="8"
+            markerHeight="16"
+            refX="8"
+            refY="8"
+            orient="auto"
+            markerUnits="userSpaceOnUse"
+            viewBox="0 0 8 16"
+          >
+            <line x1="0" y1="2" x2="0" y2="14" stroke="#000000" stroke-width="3" />
+          </marker>
+
+          <!-- IE One to Many - One End (single line) -->
+          <marker
+            id="ie-one"
+            markerWidth="8"
+            markerHeight="16"
+            refX="8"
+            refY="8"
+            orient="auto"
+            markerUnits="userSpaceOnUse"
+            viewBox="0 0 8 16"
+          >
+            <line x1="0" y1="2" x2="0" y2="14" stroke="#000000" stroke-width="3" />
+          </marker>
+
+          <!-- IE One to Many - Many End (crow's foot) -->
+          <marker
+            id="ie-many"
+            markerWidth="20"
+            markerHeight="20"
+            refX="20"
+            refY="10"
+            orient="auto"
+            markerUnits="userSpaceOnUse"
+            viewBox="0 0 20 20"
+          >
+            <path d="M 0,10 L 20,10 M 14,4 L 20,10 L 14,16" stroke="#000000" stroke-width="3" fill="none" stroke-linejoin="round" />
+          </marker>
+
+          <!-- IE One or More - Double line + crow's foot -->
+          <marker
+            id="ie-one-or-more"
+            markerWidth="28"
+            markerHeight="20"
+            refX="28"
+            refY="10"
+            orient="auto"
+            markerUnits="userSpaceOnUse"
+            viewBox="0 0 28 20"
+          >
+            <line x1="0" y1="4" x2="0" y2="16" stroke="#000000" stroke-width="3" />
+            <line x1="6" y1="4" x2="6" y2="16" stroke="#000000" stroke-width="3" />
+            <path d="M 8,10 L 28,10 M 22,4 L 28,10 L 22,16" stroke="#000000" stroke-width="3" fill="none" stroke-linejoin="round" />
+          </marker>
+
+          <!-- IE One and Only One - Double line -->
+          <marker
+            id="ie-one-only"
+            markerWidth="14"
+            markerHeight="16"
+            refX="14"
+            refY="8"
+            orient="auto"
+            markerUnits="userSpaceOnUse"
+            viewBox="0 0 14 16"
+          >
+            <line x1="0" y1="2" x2="0" y2="14" stroke="#000000" stroke-width="3" />
+            <line x1="6" y1="2" x2="6" y2="14" stroke="#000000" stroke-width="3" />
+          </marker>
+
+          <!-- IE Zero or One - Circle + line -->
+          <marker
+            id="ie-zero-one"
+            markerWidth="20"
+            markerHeight="16"
+            refX="20"
+            refY="8"
+            orient="auto"
+            markerUnits="userSpaceOnUse"
+            viewBox="0 0 20 16"
+          >
+            <circle cx="5" cy="8" r="5" fill="none" stroke="#000000" stroke-width="3" />
+            <line x1="12" y1="2" x2="12" y2="14" stroke="#000000" stroke-width="3" />
+          </marker>
+
+          <!-- IE Zero or Many - Circle + crow's foot -->
+          <marker
+            id="ie-zero-many"
+            markerWidth="32"
+            markerHeight="20"
+            refX="32"
+            refY="10"
+            orient="auto"
+            markerUnits="userSpaceOnUse"
+            viewBox="0 0 32 20"
+          >
+            <circle cx="5" cy="10" r="5" fill="none" stroke="#000000" stroke-width="3" />
+            <path d="M 12,10 L 32,10 M 26,4 L 32,10 L 26,16" stroke="#000000" stroke-width="3" fill="none" stroke-linejoin="round" />
+          </marker>
+
+          <!-- Original colored markers for normal mode -->
           <marker
             id="one-to-one"
             markerWidth="16"
@@ -491,7 +617,6 @@ const viewportRect = computed(() => {
             <text x="8" y="8" text-anchor="middle" font-family="Arial, sans-serif" font-size="7" font-weight="bold" fill="#3b82f6">1</text>
           </marker>
 
-          <!-- One-to-Many: "N" symbol -->
           <marker
             id="one-to-many"
             markerWidth="16"
@@ -506,7 +631,6 @@ const viewportRect = computed(() => {
             <text x="8" y="8" text-anchor="middle" font-family="Arial, sans-serif" font-size="7" font-weight="bold" fill="#3b82f6">N</text>
           </marker>
 
-          <!-- Many-to-One: "M" symbol -->
           <marker
             id="many-to-one"
             markerWidth="16"
@@ -521,7 +645,6 @@ const viewportRect = computed(() => {
             <text x="8" y="8" text-anchor="middle" font-family="Arial, sans-serif" font-size="7" font-weight="bold" fill="#3b82f6">M</text>
           </marker>
 
-          <!-- Many-to-Many: "M:N" symbol -->
           <marker
             id="many-to-many"
             markerWidth="20"
@@ -535,82 +658,27 @@ const viewportRect = computed(() => {
             <rect x="1" y="2" width="18" height="8" fill="white" stroke="#3b82f6" stroke-width="1" rx="2" />
             <text x="10" y="8" text-anchor="middle" font-family="Arial, sans-serif" font-size="6" font-weight="bold" fill="#3b82f6">M:N</text>
           </marker>
-
-          <!-- Small versions for zoomed out views -->
-          <marker
-            id="one-to-one-small"
-            markerWidth="12"
-            markerHeight="8"
-            refX="6"
-            refY="4"
-            orient="auto"
-            markerUnits="strokeWidth"
-            viewBox="0 0 12 8"
-          >
-            <rect x="1" y="1" width="10" height="6" fill="white" stroke="#3b82f6" stroke-width="0.8" rx="1" />
-            <text x="6" y="5.5" text-anchor="middle" font-family="Arial, sans-serif" font-size="5" font-weight="bold" fill="#3b82f6">1</text>
-          </marker>
-
-          <marker
-            id="one-to-many-small"
-            markerWidth="12"
-            markerHeight="8"
-            refX="6"
-            refY="4"
-            orient="auto"
-            markerUnits="strokeWidth"
-            viewBox="0 0 12 8"
-          >
-            <rect x="1" y="1" width="10" height="6" fill="white" stroke="#3b82f6" stroke-width="0.8" rx="1" />
-            <text x="6" y="5.5" text-anchor="middle" font-family="Arial, sans-serif" font-size="5" font-weight="bold" fill="#3b82f6">N</text>
-          </marker>
-
-          <marker
-            id="many-to-one-small"
-            markerWidth="12"
-            markerHeight="8"
-            refX="6"
-            refY="4"
-            orient="auto"
-            markerUnits="strokeWidth"
-            viewBox="0 0 12 8"
-          >
-            <rect x="1" y="1" width="10" height="6" fill="white" stroke="#3b82f6" stroke-width="0.8" rx="1" />
-            <text x="6" y="5.5" text-anchor="middle" font-family="Arial, sans-serif" font-size="5" font-weight="bold" fill="#3b82f6">M</text>
-          </marker>
-
-          <marker
-            id="many-to-many-small"
-            markerWidth="16"
-            markerHeight="8"
-            refX="8"
-            refY="4"
-            orient="auto"
-            markerUnits="strokeWidth"
-            viewBox="0 0 16 8"
-          >
-            <rect x="1" y="1" width="14" height="6" fill="white" stroke="#3b82f6" stroke-width="0.8" rx="1" />
-            <text x="8" y="5.5" text-anchor="middle" font-family="Arial, sans-serif" font-size="4.5" font-weight="bold" fill="#3b82f6">M:N</text>
-          </marker>
         </defs>
 
         <g v-if="canvas.scale > 0.1">
-          <!-- Relationship lines without markers -->
+          <!-- Relationship lines with IE-style markers in government mode -->
           <path
             v-for="relationship in relationships"
             :key="relationship.id"
             :d="getRelationshipPath(relationship)"
-            stroke="#3b82f6"
-            :stroke-width="Math.max(1, 3 / canvas.scale)"
+            :stroke="canvas.isGovernmentMode ? '#000000' : '#3b82f6'"
+            :stroke-width="canvas.isGovernmentMode ? Math.max(2, 4 / canvas.scale) : Math.max(1, 3 / canvas.scale)"
             fill="none"
             stroke-linecap="round"
             stroke-linejoin="round"
             :opacity="Math.max(0.5, Math.min(1, canvas.scale * 2))"
             class="transition-opacity duration-200"
+            :marker-start="canvas.isGovernmentMode ? `url(#${getIEMarker(relationship, 'from')})` : ''"
+            :marker-end="canvas.isGovernmentMode ? `url(#${getIEMarker(relationship, 'to')})` : ''"
           />
           
-          <!-- Cardinality labels on lines -->
-          <g v-for="relationship in relationships" :key="`label-${relationship.id}`">
+          <!-- Cardinality labels on lines (only in normal mode, not government mode) -->
+          <g v-if="!canvas.isGovernmentMode" v-for="relationship in relationships" :key="`label-${relationship.id}`">
             <text
               v-if="getCardinalityLabel(relationship, 'from')"
               :x="getCardinalityPosition(relationship, 'from').x"
@@ -674,7 +742,11 @@ const viewportRect = computed(() => {
 
     <!-- Canvas Info -->
     <div
-      class="absolute top-4 left-4 bg-white/90 backdrop-blur-sm rounded-lg px-3 py-2 text-xs text-gray-600 shadow-sm z-20"
+      class="absolute top-4 left-4 backdrop-blur-sm rounded-lg px-3 py-2 text-xs shadow-sm z-20"
+      :class="{
+        'bg-white/90 text-gray-600': !canvas.isGovernmentMode,
+        'bg-blue-50/90 text-gray-700 border border-gray-400': canvas.isGovernmentMode,
+      }"
     >
       <div>{{ Math.round(canvas.scale * 100) }}% zoom</div>
       <div>{{ tables.length }} tables</div>
@@ -720,7 +792,11 @@ const viewportRect = computed(() => {
     <!-- Mini-map -->
     <div
       v-if="canvas.scale < 0.5 && tables.length > 0"
-      class="absolute top-4 right-4 w-48 h-32 bg-white/90 backdrop-blur-sm rounded-lg shadow-lg border border-gray-200 z-20 overflow-hidden"
+      class="absolute top-4 right-4 w-48 h-32 backdrop-blur-sm rounded-lg shadow-lg z-20 overflow-hidden"
+      :class="{
+        'bg-white/90 border border-gray-200': !canvas.isGovernmentMode,
+        'bg-blue-50/90 border border-gray-400': canvas.isGovernmentMode,
+      }"
     >
       <div
         class="p-2 text-xs font-medium text-gray-600 border-b border-gray-200"
@@ -735,10 +811,12 @@ const viewportRect = computed(() => {
               :y="table.y"
               :width="table.width"
               :height="table.height"
-              :fill="canvas.selectedTable === table.id ? '#3b82f6' : '#e5e7eb'"
-              :stroke="
-                canvas.selectedTable === table.id ? '#1d4ed8' : '#9ca3af'
-              "
+              :fill="canvas.isGovernmentMode 
+                ? (canvas.selectedTable === table.id ? '#000000' : '#ffffff') 
+                : (canvas.selectedTable === table.id ? '#3b82f6' : '#e5e7eb')"
+              :stroke="canvas.isGovernmentMode 
+                ? (canvas.selectedTable === table.id ? '#374151' : '#000000') 
+                : (canvas.selectedTable === table.id ? '#1d4ed8' : '#9ca3af')"
               stroke-width="1"
               rx="4"
             />

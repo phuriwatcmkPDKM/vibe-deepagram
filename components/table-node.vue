@@ -18,6 +18,9 @@ const props = withDefaults(defineProps<Props>(), {
 
 const emit = defineEmits<Emits>();
 
+const schemaStore = useSchemaStore();
+const { canvas } = storeToRefs(schemaStore);
+
 // Computed height based on columns
 const calculatedHeight = computed(() => {
   const headerHeight = 40; // Table header height
@@ -100,28 +103,50 @@ const onMouseUp = () => {
       width: `${table.width}px`,
       height: `${calculatedHeight}px`,
     }"
-    class="w-full h-full bg-white border-2 border-gray-200 rounded-lg shadow-lg hover:shadow-xl transition-shadow cursor-move select-none"
+    class="w-full h-full rounded-lg shadow-lg hover:shadow-xl transition-shadow cursor-move select-none"
     :class="{
       'border-primary/60 shadow-primary-100 overflow-hidden': isSelected,
+      'bg-white border-2 border-gray-200': !canvas.isGovernmentMode,
+      'bg-white border-2 border-black': canvas.isGovernmentMode,
     }"
     @mousedown="startDrag"
   >
     <!-- Table Header -->
     <div
-      class="bg-gradient-to-r from-purple-500 to-indigo-600 text-white px-4 py-3 rounded-t-md"
+      class="px-4 py-3 rounded-t-md"
+      :class="{
+        'bg-gradient-to-r from-purple-500 to-indigo-600 text-white': !canvas.isGovernmentMode,
+        'bg-white text-black border-b border-black': canvas.isGovernmentMode,
+      }"
     >
       <div class="flex items-center gap-2">
-        <div class="w-3 h-3 bg-white/20 rounded-sm" />
+        <div 
+          class="w-3 h-3 rounded-sm" 
+          :class="{
+            'bg-white/20': !canvas.isGovernmentMode,
+            'bg-black/20': canvas.isGovernmentMode,
+          }"
+        />
         <h3 class="font-semibold text-sm">{{ table.name }}</h3>
       </div>
     </div>
 
     <!-- Columns -->
-    <div class="divide-y divide-gray-100">
+    <div 
+      class="divide-y"
+      :class="{
+        'divide-gray-100': !canvas.isGovernmentMode,
+        'divide-black': canvas.isGovernmentMode,
+      }"
+    >
       <div
         v-for="(column, index) in table.columns"
         :key="index"
-        class="px-4 py-2.5 hover:bg-gray-50 transition-colors"
+        class="px-4 py-2.5 transition-colors"
+        :class="{
+          'hover:bg-gray-50': !canvas.isGovernmentMode,
+          'hover:bg-gray-100': canvas.isGovernmentMode,
+        }"
       >
         <div class="flex items-center justify-between">
           <div class="flex items-center gap-2">
@@ -141,12 +166,24 @@ const onMouseUp = () => {
               </span>
             </div>
 
-            <span class="text-sm font-medium text-gray-900">{{
+            <span 
+              class="text-sm font-medium"
+              :class="{
+                'text-gray-900': !canvas.isGovernmentMode,
+                'text-black': canvas.isGovernmentMode,
+              }"
+            >{{
               column.name
             }}</span>
           </div>
 
-          <div class="text-xs text-gray-500">
+          <div 
+            class="text-xs"
+            :class="{
+              'text-gray-500': !canvas.isGovernmentMode,
+              'text-gray-600': canvas.isGovernmentMode,
+            }"
+          >
             {{
               column.length ? `${column.type}(${column.length})` : column.type
             }}

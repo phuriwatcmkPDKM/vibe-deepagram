@@ -16,6 +16,7 @@ export const useSchemaStore = defineStore("schema", () => {
     isDragging: false,
     isPanning: false,
     selectedTable: null,
+    isGovernmentMode: false,
   });
 
   const addTable = (
@@ -129,6 +130,10 @@ export const useSchemaStore = defineStore("schema", () => {
     canvas.isPanning = isPanning;
   };
 
+  const setGovernmentMode = (isGovernmentMode: boolean): void => {
+    canvas.isGovernmentMode = isGovernmentMode;
+  };
+
   const clearSchema = (): void => {
     tables.value = [];
     relationships.value = [];
@@ -138,6 +143,7 @@ export const useSchemaStore = defineStore("schema", () => {
     canvas.selectedTable = null;
     canvas.isDragging = false;
     canvas.isPanning = false;
+    canvas.isGovernmentMode = false;
   };
 
   const parseSchemaData = (schemaText: string): void => {
@@ -281,6 +287,7 @@ database,public,comments,created_at,5,timestamp,,DEFAULT NOW(),,,`;
     setSelectedTable,
     setDragState,
     setPanState,
+    setGovernmentMode,
     clearSchema,
     parseSchemaData,
     getSampleData,

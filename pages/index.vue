@@ -2,7 +2,7 @@
 import type { DatabaseType } from "~/types/schema";
 
 const schemaStore = useSchemaStore();
-const { tables, relationships } = storeToRefs(schemaStore);
+const { tables, relationships, canvas } = storeToRefs(schemaStore);
 
 const selectedDbType = ref<DatabaseType>("postgresql");
 const showImportModal = ref<boolean>(false);
@@ -18,6 +18,10 @@ const clearAll = (): void => {
 const handleImport = (): void => {
   // Additional handling after import if needed
   console.log("Schema imported successfully");
+};
+
+const toggleGovernmentMode = (): void => {
+  schemaStore.setGovernmentMode(!canvas.value.isGovernmentMode);
 };
 
 // Set page title
@@ -54,6 +58,14 @@ useHead({
 
             <button class="btn-secondary text-sm" @click="clearAll">
               Clear
+            </button>
+
+            <button 
+              class="btn-secondary text-sm" 
+              :class="{ 'bg-gray-800 text-white': canvas.isGovernmentMode }"
+              @click="toggleGovernmentMode"
+            >
+              {{ canvas.isGovernmentMode ? 'Exit Classic Mode' : 'Classic Diagram' }}
             </button>
           </div>
         </div>

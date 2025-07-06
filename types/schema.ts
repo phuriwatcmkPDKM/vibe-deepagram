@@ -36,6 +36,7 @@ export interface CanvasState {
   isDragging: boolean;
   isPanning: boolean;
   selectedTable: string | null;
+  isGovernmentMode: boolean;
 }
 
 export interface SchemaData {

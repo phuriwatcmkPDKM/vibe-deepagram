@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { ROW_HEIGHT } from "~/constants";
 import type { Table, DragMoveEvent } from "~/types/schema";
 
 interface Props {
@@ -24,7 +25,7 @@ const { canvas } = storeToRefs(schemaStore);
 // Computed height based on columns
 const calculatedHeight = computed(() => {
   const headerHeight = 40; // Table header height
-  const rowHeight = 42; // Each column row height
+  const rowHeight = ROW_HEIGHT; // Each column row height
   return headerHeight + props.table.columns.length * rowHeight;
 });
 

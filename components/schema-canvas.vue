@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { ROW_HEIGHT } from "~/constants";
 import type { Relationship, DragMoveEvent } from "~/types/schema";
 
 const schemaStore = useSchemaStore();
@@ -166,7 +167,7 @@ const relationshipPaths = computed(() => {
 
     // Calculate precise connection points based on updated row height (42px)
     const headerHeight = 40;
-    const rowHeight = 42;
+    const rowHeight = ROW_HEIGHT;
     const rowCenter = rowHeight / 2;
 
     const fromY =
@@ -289,7 +290,6 @@ const getIEMarker = (
   // Determine if relationship is mandatory or optional
   const isFromMandatory = checkIfMandatory(relationship, "from");
   const isToMandatory = checkIfMandatory(relationship, "to");
-
 
   switch (cardinality) {
     case "one-to-one":

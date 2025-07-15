@@ -4,10 +4,15 @@ export function useToken() {
   const config = useRuntimeConfig();
   const token = useCookie(config.public.accessTokenCookieName, {
     expires: new Date(Date.now() + 1000 * 60 * 60 * 24 * 7),
+    httpOnly: true,
+    secure: true,
+    sameSite: "strict",
   });
-
   const refreshToken = useCookie(config.public.refreshTokenCookieName, {
     expires: new Date(Date.now() + 1000 * 60 * 60 * 24 * 7),
+    httpOnly: true,
+    secure: true,
+    sameSite: "strict",
   });
 
   function getToken() {
@@ -41,29 +46,33 @@ export function useToken() {
         method: "POST",
         body: { refreshToken: refreshToken.value },
       });
-
       if (error.value) {
-        throw error;
+        throw new Error(
+          `Token refresh failed: ${error.value.message || "Unknown error"}`
+        );
       }
-
       if (!data.value?.data) {
         throw new Error("API not response item");
       }
-
       const { accessToken: newAccessToken, refreshToken: newRefreshToken } =
         data.value.data.item;
-
       if (!newAccessToken) {
-        throw new Error("API not response accesstoken");
+        throw new Error("API not response access token");
       }
-
+      // Validate new access token format
+      if (
+        !newAccessToken.includes(".") ||
+        newAccessToken.split(".").length !== 3
+      ) {
+        throw new Error("Invalid access token format received");
+      }
       setToken(newAccessToken);
-
       if (newRefreshToken) {
         setRefreshToken(newRefreshToken);
       }
     } catch (error) {
       clear();
+      console.error("Token refresh failed:", error);
       navigateTo(config.public.authUrl);
       return error;
     }

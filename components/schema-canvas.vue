@@ -126,18 +126,15 @@ const onWheel = (event: WheelEvent) => {
 
 // Table handlers
 const handleTableDragStart = (tableId: string) => {
-  console.log("Canvas received dragStart", tableId);
   schemaStore.setSelectedTable(tableId);
   schemaStore.setDragState(true);
 };
 
 const handleTableDragMove = ({ tableId, x, y }: DragMoveEvent) => {
-  console.log("Canvas received dragMove", { tableId, x, y });
   schemaStore.updateTablePosition(tableId, x, y);
 };
 
 const handleTableDragEnd = () => {
-  console.log("Canvas received dragEnd");
   schemaStore.setDragState(false);
 };
 
@@ -293,13 +290,6 @@ const getIEMarker = (
   const isFromMandatory = checkIfMandatory(relationship, "from");
   const isToMandatory = checkIfMandatory(relationship, "to");
 
-  console.log(
-    `Getting IE marker for ${relationship.fromTable}->${
-      relationship.toTable
-    }, cardinality: ${cardinality}, side: ${side}, mandatory: ${
-      side === "from" ? isFromMandatory : isToMandatory
-    }`
-  );
 
   switch (cardinality) {
     case "one-to-one":
@@ -422,6 +412,11 @@ const getCardinalityPosition = (
 // Container rect for minimap
 const containerRect = computed(() => {
   return containerRef.value?.getBoundingClientRect() || null;
+});
+
+onBeforeUnmount(() => {
+  document.removeEventListener("mousemove", onMouseMove);
+  document.removeEventListener("mouseup", onMouseUp);
 });
 </script>
 

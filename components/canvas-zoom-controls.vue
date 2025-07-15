@@ -112,12 +112,12 @@ onKeyStroke("1", (e) => {
 <template>
   <div class="absolute bottom-6 right-6 flex flex-col gap-2 z-20">
     <div
-      class="bg-white rounded-lg shadow-lg p-1 flex flex-col gap-1 transition-all duration-200 hover:shadow-xl"
+      class="bg-white rounded-lg shadow-lg p-1 flex flex-col gap-1 transition-all duration-200 hover:shadow-xl items-center min-w-16"
     >
       <!-- Zoom In Button -->
       <button
         :disabled="!canZoomIn"
-        class="w-10 h-10 bg-white border-0 rounded-md hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center text-lg font-bold text-gray-700 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
+        class="cursor-pointer w-full h-10 bg-white border-0 rounded-md hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center text-lg font-bold text-gray-700 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
         title="Zoom In (Ctrl/Cmd + Plus)"
         @click="zoomIn"
       >
@@ -127,7 +127,7 @@ onKeyStroke("1", (e) => {
       <!-- Zoom Out Button -->
       <button
         :disabled="!canZoomOut"
-        class="w-10 h-10 bg-white border-0 rounded-md hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center text-lg font-bold text-gray-700 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
+        class="cursor-pointer w-full h-10 bg-white border-0 rounded-md hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center text-lg font-bold text-gray-700 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
         title="Zoom Out (Ctrl/Cmd + Minus)"
         @click="zoomOut"
       >
@@ -135,12 +135,12 @@ onKeyStroke("1", (e) => {
       </button>
 
       <!-- Separator -->
-      <div class="w-full h-px bg-gray-200 my-1" />
+      <div class="w-full h-[0.5px] bg-gray-200 my-1" />
 
       <!-- Fit to Screen Button -->
       <button
         :disabled="!hasTables"
-        class="px-3 py-2 bg-white border-0 rounded-md hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-all text-xs font-medium text-gray-700 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
+        class="cursor-pointer w-full px-3 py-2 bg-white border-0 rounded-md hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-all text-xs font-medium text-gray-700 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
         title="Fit to Screen (Ctrl/Cmd + 0)"
         @click="fitToScreen"
       >
@@ -149,7 +149,7 @@ onKeyStroke("1", (e) => {
 
       <!-- Reset Zoom Button -->
       <button
-        class="px-3 py-2 bg-white border-0 rounded-md hover:bg-gray-100 transition-all text-xs font-medium text-gray-700 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
+        class="cursor-pointer px-3 py-2 bg-white border-0 rounded-md hover:bg-gray-100 transition-all text-xs font-medium text-gray-700 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
         :class="{ 'bg-blue-50 text-blue-700': zoomPercentage === 100 }"
         :title="resetZoomTooltip"
         @click="resetZoom"

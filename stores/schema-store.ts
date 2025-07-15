@@ -272,47 +272,47 @@ export const useSchemaStore = defineStore("schema", () => {
   };
 
   const getSampleData = (): string => {
-    return `dbms,table_catalog,table_schema,table_name,column_name,ordinal_position,data_type,character_maximum_length,constraint_type,foreign_table_schema,foreign_table_name,foreign_column_name
-postgresql,database,public,users,id,1,uuid,,PRIMARY KEY,,,
-postgresql,database,public,users,name,2,varchar,255,,,,
-postgresql,database,public,users,username,3,varchar,255,,,,
-postgresql,database,public,users,password,4,varchar,255,,,,
-postgresql,database,public,users,age,5,numeric,,,,
-postgresql,database,public,users,user_type_id,6,uuid,,FOREIGN KEY,public,user_types,id
-postgresql,database,public,users,created_at,7,timestamp,,,,
-postgresql,database,public,users,updated_at,8,timestamp,,,,
-postgresql,database,public,users,deleted_at,9,timestamp,,,,
+    return `dbms,table_catalog,table_schema,table_name,column_name,ordinal_position,data_type,character_maximum_length,constraint_type,foreign_table_schema,foreign_table_name,foreign_column_name,relationship_hint
+postgresql,database,public,users,id,1,uuid,,PRIMARY KEY,,,,
+postgresql,database,public,users,name,2,varchar,255,,,,,
+postgresql,database,public,users,username,3,varchar,255,,,,,
+postgresql,database,public,users,password,4,varchar,255,,,,,
+postgresql,database,public,users,age,5,numeric,,,,,
+postgresql,database,public,users,user_type_id,6,uuid,,FOREIGN KEY,public,user_types,id,
+postgresql,database,public,users,created_at,7,timestamp,,,,,
+postgresql,database,public,users,updated_at,8,timestamp,,,,,
+postgresql,database,public,users,deleted_at,9,timestamp,,,,,
 
-postgresql,database,public,user_types,id,1,uuid,,PRIMARY KEY,,,
-postgresql,database,public,user_types,code,2,varchar,100,,,,
-postgresql,database,public,user_types,name,3,varchar,255,,,,
-postgresql,database,public,user_types,created_at,4,timestamp,,,,
-postgresql,database,public,user_types,updated_at,5,timestamp,,,,
-postgresql,database,public,user_types,deleted_at,6,timestamp,,,,
+postgresql,database,public,user_types,id,1,uuid,,PRIMARY KEY,,,,
+postgresql,database,public,user_types,code,2,varchar,100,,,,,
+postgresql,database,public,user_types,name,3,varchar,255,,,,,
+postgresql,database,public,user_types,created_at,4,timestamp,,,,,
+postgresql,database,public,user_types,updated_at,5,timestamp,,,,,
+postgresql,database,public,user_types,deleted_at,6,timestamp,,,,,
 
-postgresql,database,public,posts,id,1,uuid,,PRIMARY KEY,,,
-postgresql,database,public,posts,user_id,2,uuid,,FOREIGN KEY,public,users,id
-postgresql,database,public,posts,title,3,varchar,255,,,,
-postgresql,database,public,posts,content,4,text,,,,
-postgresql,database,public,posts,is_published,5,boolean,,,,
-postgresql,database,public,posts,created_at,6,timestamp,,,,
-postgresql,database,public,posts,updated_at,7,timestamp,,,,
+postgresql,database,public,posts,id,1,uuid,,PRIMARY KEY,,,,
+postgresql,database,public,posts,user_id,2,uuid,,FOREIGN KEY,public,users,id,
+postgresql,database,public,posts,title,3,varchar,255,,,,,
+postgresql,database,public,posts,content,4,text,,,,,
+postgresql,database,public,posts,is_published,5,boolean,,,,,
+postgresql,database,public,posts,created_at,6,timestamp,,,,,
+postgresql,database,public,posts,updated_at,7,timestamp,,,,,
 
-postgresql,database,public,comments,id,1,uuid,,PRIMARY KEY,,,
-postgresql,database,public,comments,post_id,2,uuid,,FOREIGN KEY,public,posts,id
-postgresql,database,public,comments,user_id,3,uuid,,FOREIGN KEY,public,users,id
-postgresql,database,public,comments,content,4,text,,,,
-postgresql,database,public,comments,created_at,5,timestamp,,,,
-postgresql,database,public,comments,updated_at,6,timestamp,,,,
+postgresql,database,public,comments,id,1,uuid,,PRIMARY KEY,,,,
+postgresql,database,public,comments,post_id,2,uuid,,FOREIGN KEY,public,posts,id,
+postgresql,database,public,comments,user_id,3,uuid,,FOREIGN KEY,public,users,id,
+postgresql,database,public,comments,content,4,text,,,,,
+postgresql,database,public,comments,created_at,5,timestamp,,,,,
+postgresql,database,public,comments,updated_at,6,timestamp,,,,,
 
-postgresql,database,public,categories,id,1,uuid,,PRIMARY KEY,,,
-postgresql,database,public,categories,name,2,varchar,255,,,,
-postgresql,database,public,categories,slug,3,varchar,255,,,,
-postgresql,database,public,categories,created_at,4,timestamp,,,,
-postgresql,database,public,categories,updated_at,5,timestamp,,,,
+postgresql,database,public,categories,id,1,uuid,,PRIMARY KEY,,,,
+postgresql,database,public,categories,name,2,varchar,255,,,,,
+postgresql,database,public,categories,slug,3,varchar,255,,,,,
+postgresql,database,public,categories,created_at,4,timestamp,,,,,
+postgresql,database,public,categories,updated_at,5,timestamp,,,,,
 
-postgresql,database,public,post_categories,post_id,1,uuid,,FOREIGN KEY,public,posts,id
-postgresql,database,public,post_categories,category_id,2,uuid,,FOREIGN KEY,public,categories,id
+postgresql,database,public,post_categories,post_id,1,uuid,,FOREIGN KEY,public,posts,id,many-to-many
+postgresql,database,public,post_categories,category_id,2,uuid,,FOREIGN KEY,public,categories,id,many-to-many
 `;
   };
 

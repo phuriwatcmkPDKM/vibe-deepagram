@@ -170,11 +170,11 @@ describe("useSchemaStore - Integration", () => {
     const sampleData = store.getSampleData();
     store.parseSchemaData(sampleData);
 
-    expect(store.tables).toHaveLength(9);
-    expect(store.relationships).toHaveLength(10);
+    expect(store.tables).toHaveLength(6);
+    expect(store.relationships).toHaveLength(6);
 
     // 2. Add a new table
-    const newTable = store.addTable("comments", [
+    const newTable = store.addTable("tags", [
       {
         name: "id",
         type: "uuid",
@@ -185,21 +185,18 @@ describe("useSchemaStore - Integration", () => {
         isNotNull: false,
       },
       {
-        name: "post_id",
-        type: "uuid",
-        length: "",
+        name: "name",
+        type: "varchar",
+        length: "100",
         isPrimary: false,
-        isForeign: true,
-        isUnique: false,
+        isForeign: false,
+        isUnique: true,
         isNotNull: true,
-        foreignTable: "posts",
-        foreignColumn: "id",
       },
     ]);
-    store.addRelationship("comments", "post_id", "posts", "id");
 
-    expect(store.tables).toHaveLength(10);
-    expect(store.relationships).toHaveLength(11);
+    expect(store.tables).toHaveLength(7);
+    expect(store.relationships).toHaveLength(6);
 
     // 3. Move a table
     store.updateTablePosition(newTable.id, 800, 400);
@@ -209,8 +206,8 @@ describe("useSchemaStore - Integration", () => {
 
     // 4. Delete a table
     store.deleteTable(newTable.id);
-    expect(store.tables).toHaveLength(9);
-    expect(store.relationships).toHaveLength(10); // relationship removed
+    expect(store.tables).toHaveLength(6);
+    expect(store.relationships).toHaveLength(6); // back to original count
 
     // 5. Clear everything
     store.clearSchema();

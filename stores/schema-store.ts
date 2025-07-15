@@ -130,8 +130,8 @@ export const useSchemaStore = defineStore("schema", () => {
     canvas.isPanning = isPanning;
   };
 
-  const setGovernmentMode = (isGovernmentMode: boolean): void => {
-    canvas.isClassicMode = isGovernmentMode;
+  const setClassicMode = (isClassicMode: boolean): void => {
+    canvas.isClassicMode = isClassicMode;
   };
 
   const clearSchema = (): void => {
@@ -328,7 +328,7 @@ database,public,employee_skills,proficiency,4,varchar,50,,,,`;
     setSelectedTable,
     setDragState,
     setPanState,
-    setGovernmentMode,
+    setClassicMode,
     clearSchema,
     parseSchemaData,
     getSampleData,

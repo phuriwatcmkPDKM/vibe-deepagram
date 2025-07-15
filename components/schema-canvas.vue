@@ -141,8 +141,6 @@ const handleTableDragEnd = () => {
   schemaStore.setDragState(false);
 };
 
-
-
 // Optimized relationship path calculation with improved connection logic
 const relationshipPaths = computed(() => {
   const paths = new Map<string, string>();

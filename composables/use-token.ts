@@ -4,15 +4,9 @@ export function useToken() {
   const config = useRuntimeConfig();
   const token = useCookie(config.public.accessTokenCookieName, {
     expires: new Date(Date.now() + 1000 * 60 * 60 * 24 * 7),
-    httpOnly: true,
-    secure: true,
-    sameSite: "strict",
   });
   const refreshToken = useCookie(config.public.refreshTokenCookieName, {
     expires: new Date(Date.now() + 1000 * 60 * 60 * 24 * 7),
-    httpOnly: true,
-    secure: true,
-    sameSite: "strict",
   });
 
   function getToken() {

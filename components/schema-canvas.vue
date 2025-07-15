@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { Relationship, DragMoveEvent, Table } from "~/types/schema";
+import type { Relationship, DragMoveEvent } from "~/types/schema";
 
 const schemaStore = useSchemaStore();
 const { tables, relationships, canvas } = storeToRefs(schemaStore);
@@ -141,84 +141,7 @@ const handleTableDragEnd = () => {
   schemaStore.setDragState(false);
 };
 
-// Zoom controls
-const zoomIn = () => {
-  const newScale = Math.min(canvas.value.scale * 1.2, 3);
-  schemaStore.updateCanvasScale(newScale);
-};
 
-const zoomOut = () => {
-  const newScale = Math.max(canvas.value.scale * 0.8, 0.1);
-  schemaStore.updateCanvasScale(newScale);
-};
-
-const resetZoom = () => {
-  schemaStore.updateCanvasState({ scale: 1, panX: 0, panY: 0 });
-};
-
-const fitToScreen = () => {
-  if (tables.value.length === 0) {
-    resetZoom();
-    return;
-  }
-
-  const padding = 100;
-  let minX = Infinity,
-    minY = Infinity,
-    maxX = -Infinity,
-    maxY = -Infinity;
-
-  tables.value.forEach((table: Table) => {
-    minX = Math.min(minX, table.x);
-    minY = Math.min(minY, table.y);
-    maxX = Math.max(maxX, table.x + table.width);
-    maxY = Math.max(maxY, table.y + table.height);
-  });
-
-  const contentWidth = maxX - minX + padding * 2;
-  const contentHeight = maxY - minY + padding * 2;
-  const containerRect = containerRef.value?.getBoundingClientRect();
-
-  if (containerRect) {
-    const scaleX = containerRect.width / contentWidth;
-    const scaleY = containerRect.height / contentHeight;
-    const newScale = Math.min(scaleX, scaleY, 1);
-
-    const panX = (containerRect.width - (maxX + minX) * newScale) / 2;
-    const panY = (containerRect.height - (maxY + minY) * newScale) / 2;
-
-    schemaStore.updateCanvasState({ scale: newScale, panX, panY });
-  }
-};
-
-// Keyboard shortcuts
-onKeyStroke(["+", "="], (e) => {
-  if (e.ctrlKey || e.metaKey) {
-    e.preventDefault();
-    zoomIn();
-  }
-});
-
-onKeyStroke("-", (e) => {
-  if (e.ctrlKey || e.metaKey) {
-    e.preventDefault();
-    zoomOut();
-  }
-});
-
-onKeyStroke("0", (e) => {
-  if (e.ctrlKey || e.metaKey) {
-    e.preventDefault();
-    fitToScreen();
-  }
-});
-
-onKeyStroke("1", (e) => {
-  if (e.ctrlKey || e.metaKey) {
-    e.preventDefault();
-    resetZoom();
-  }
-});
 
 // Optimized relationship path calculation with improved connection logic
 const relationshipPaths = computed(() => {
@@ -1033,41 +956,11 @@ const containerRect = computed(() => {
     </div>
 
     <!-- Zoom Controls -->
-    <div class="absolute bottom-6 right-6 flex flex-col gap-2 z-20">
-      <div class="bg-white rounded-lg shadow-lg p-1 flex flex-col gap-1">
-        <button
-          :disabled="canvas.scale >= 3"
-          class="w-10 h-10 bg-white border-0 rounded-md hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center text-lg font-bold text-gray-700 hover:text-gray-900"
-          title="Zoom In (Ctrl/Cmd + Plus)"
-          @click="zoomIn"
-        >
-          +
-        </button>
-        <button
-          :disabled="canvas.scale <= 0.1"
-          class="w-10 h-10 bg-white border-0 rounded-md hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center text-lg font-bold text-gray-700 hover:text-gray-900"
-          title="Zoom Out (Ctrl/Cmd + Minus)"
-          @click="zoomOut"
-        >
-          −
-        </button>
-        <div class="w-full h-px bg-gray-200 my-1" />
-        <button
-          class="px-3 py-2 bg-white border-0 rounded-md hover:bg-gray-100 transition-all text-xs font-medium text-gray-700 hover:text-gray-900"
-          title="Fit to Screen (Ctrl/Cmd + 0)"
-          @click="fitToScreen"
-        >
-          Fit
-        </button>
-        <button
-          class="px-3 py-2 bg-white border-0 rounded-md hover:bg-gray-100 transition-all text-xs font-medium text-gray-700 hover:text-gray-900"
-          title="Reset Zoom (Ctrl/Cmd + 1)"
-          @click="resetZoom"
-        >
-          100%
-        </button>
-      </div>
-    </div>
+    <canvas-zoom-controls
+      :tables="tables"
+      :canvas="canvas"
+      :container-rect="containerRect"
+    />
 
     <!-- Mini-map -->
     <canvas-minimap

@@ -23,7 +23,7 @@ const toggleGovernmentMode = (): void => {
 
 // Set page title
 useHead({
-  title: "Cortex - ER Diagram canvas",
+  title: "Cortex - canvas",
 });
 </script>
 

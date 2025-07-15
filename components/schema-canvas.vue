@@ -498,37 +498,9 @@ const getCardinalityPosition = (
   }
 };
 
-// Mini-map
-const minimapViewBox = computed(() => {
-  if (tables.value.length === 0) return "0 0 100 100";
-
-  let minX = Infinity,
-    minY = Infinity,
-    maxX = -Infinity,
-    maxY = -Infinity;
-  tables.value.forEach((table) => {
-    minX = Math.min(minX, table.x);
-    minY = Math.min(minY, table.y);
-    maxX = Math.max(maxX, table.x + table.width);
-    maxY = Math.max(maxY, table.y + table.height);
-  });
-
-  const padding = 100;
-  return `${minX - padding} ${minY - padding} ${maxX - minX + padding * 2} ${
-    maxY - minY + padding * 2
-  }`;
-});
-
-const viewportRect = computed(() => {
-  if (!containerRef.value) return { x: 0, y: 0, width: 100, height: 100 };
-
-  const rect = containerRef.value.getBoundingClientRect();
-  return {
-    x: -canvas.value.panX / canvas.value.scale,
-    y: -canvas.value.panY / canvas.value.scale,
-    width: rect.width / canvas.value.scale,
-    height: rect.height / canvas.value.scale,
-  };
+// Container rect for minimap
+const containerRect = computed(() => {
+  return containerRef.value?.getBoundingClientRect() || null;
 });
 </script>
 
@@ -1098,62 +1070,10 @@ const viewportRect = computed(() => {
     </div>
 
     <!-- Mini-map -->
-    <div
-      v-if="tables.length > 0"
-      class="absolute top-4 right-4 w-48 h-32 backdrop-blur-sm rounded-lg shadow-lg z-20 overflow-hidden"
-      :class="{
-        'bg-white/90 border border-gray-200': !canvas.isClassicMode,
-        'bg-blue-50/90 border border-gray-400': canvas.isClassicMode,
-      }"
-    >
-      <div
-        class="p-2 text-xs font-medium text-gray-600 border-b border-gray-200"
-      >
-        Overview
-      </div>
-      <div class="relative w-full h-24 bg-gray-50">
-        <svg class="absolute inset-0 w-full h-full" :viewBox="minimapViewBox">
-          <g v-for="table in tables" :key="table.id">
-            <rect
-              :x="table.x"
-              :y="table.y"
-              :width="table.width"
-              :height="table.height"
-              :fill="
-                canvas.isClassicMode
-                  ? canvas.selectedTable === table.id
-                    ? '#000000'
-                    : '#ffffff'
-                  : canvas.selectedTable === table.id
-                  ? '#3b82f6'
-                  : '#e5e7eb'
-              "
-              :stroke="
-                canvas.isClassicMode
-                  ? canvas.selectedTable === table.id
-                    ? '#374151'
-                    : '#000000'
-                  : canvas.selectedTable === table.id
-                  ? '#1d4ed8'
-                  : '#9ca3af'
-              "
-              stroke-width="1"
-              rx="4"
-            />
-          </g>
-          <!-- Viewport indicator -->
-          <rect
-            :x="viewportRect.x"
-            :y="viewportRect.y"
-            :width="viewportRect.width"
-            :height="viewportRect.height"
-            fill="rgba(59, 130, 246, 0.1)"
-            stroke="#3b82f6"
-            stroke-width="2"
-            rx="2"
-          />
-        </svg>
-      </div>
-    </div>
+    <canvas-minimap
+      :tables="tables"
+      :canvas="canvas"
+      :container-rect="containerRect"
+    />
   </div>
 </template>

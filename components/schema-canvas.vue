@@ -1099,7 +1099,7 @@ const viewportRect = computed(() => {
 
     <!-- Mini-map -->
     <div
-      v-if="canvas.scale < 0.5 && tables.length > 0"
+      v-if="tables.length > 0"
       class="absolute top-4 right-4 w-48 h-32 backdrop-blur-sm rounded-lg shadow-lg z-20 overflow-hidden"
       :class="{
         'bg-white/90 border border-gray-200': !canvas.isClassicMode,

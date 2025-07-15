@@ -1,12 +1,8 @@
 @import "tailwindcss";
+@import "./variables.css";
 
 @layer base {
   body {
     @apply font-sans antialiased text-black;
   }
-}
-
-@theme {
-  --color-primary: var(--ci-primary);
-  --color-secondary: var(--ci-secondary);
 }

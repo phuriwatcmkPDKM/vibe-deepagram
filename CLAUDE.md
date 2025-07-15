@@ -76,3 +76,49 @@ Tables are auto-positioned using:
 - 300px horizontal spacing between columns
 - 280px vertical spacing between rows
 - Initial offset: (100, 100)
+
+## Authentication System
+
+The application includes a complete JWT-based authentication system:
+
+### Components:
+- `middleware/auth.ts` - Route protection middleware
+- `stores/use-auth-store.ts` - Authentication state management
+- `composables/use-token.ts` - Token handling utilities
+- `pages/set-token.vue` - Authentication fallback page
+
+### Environment Variables:
+- `BASE_URL` - API base URL (default: http://localhost:3000)
+- `AUTH_URL` - External auth service URL (default: /set-token)
+- `ACCESS_TOKEN_COOKIE_NAME` - Access token cookie name (default: accessToken)
+- `REFRESH_TOKEN_COOKIE_NAME` - Refresh token cookie name (default: refreshToken)
+
+### Usage:
+1. Apply auth middleware to protected pages:
+   ```vue
+   <script setup>
+   definePageMeta({
+     middleware: ['auth']
+   });
+   </script>
+   ```
+
+2. Access auth state in components:
+   ```vue
+   <script setup>
+   const { isLoggedIn, user } = useAuthStore();
+   </script>
+   ```
+
+3. Handle tokens:
+   ```vue
+   <script setup>
+   const { getToken, setToken, clear } = useToken();
+   </script>
+   ```
+
+### Setup:
+1. Copy `.env.example` to `.env`
+2. Configure your authentication service URL
+3. The main page (`/`) is protected by default
+4. Users without tokens are redirected to auth service or `/set-token`

@@ -1,4 +1,9 @@
 <script setup lang="ts">
+// Apply auth middleware
+definePageMeta({
+  middleware: ["auth"],
+});
+
 const schemaStore = useSchemaStore();
 const { tables, relationships, canvas } = storeToRefs(schemaStore);
 

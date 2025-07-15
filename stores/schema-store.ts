@@ -16,7 +16,7 @@ export const useSchemaStore = defineStore("schema", () => {
     isDragging: false,
     isPanning: false,
     selectedTable: null,
-    isGovernmentMode: false,
+    isClassicMode: false,
   });
 
   const addTable = (
@@ -56,7 +56,7 @@ export const useSchemaStore = defineStore("schema", () => {
   };
 
   const recalculateAllTableHeights = (): void => {
-    tables.value.forEach(table => {
+    tables.value.forEach((table) => {
       table.height = 40 + table.columns.length * 32;
     });
   };
@@ -66,30 +66,30 @@ export const useSchemaStore = defineStore("schema", () => {
     fromColumn: string,
     toTable: string,
     toColumn: string,
-    cardinality?: 'one-to-one' | 'one-to-many' | 'many-to-one' | 'many-to-many'
+    cardinality?: "one-to-one" | "one-to-many" | "many-to-one" | "many-to-many"
   ): void => {
     // Auto-detect cardinality if not provided
     let detectedCardinality = cardinality;
     if (!detectedCardinality) {
-      const fromTableObj = tables.value.find(t => t.name === fromTable);
-      const toTableObj = tables.value.find(t => t.name === toTable);
-      
+      const fromTableObj = tables.value.find((t) => t.name === fromTable);
+      const toTableObj = tables.value.find((t) => t.name === toTable);
+
       if (fromTableObj && toTableObj) {
-        const fromCol = fromTableObj.columns.find(c => c.name === fromColumn);
-        const toCol = toTableObj.columns.find(c => c.name === toColumn);
-        
+        const fromCol = fromTableObj.columns.find((c) => c.name === fromColumn);
+        const toCol = toTableObj.columns.find((c) => c.name === toColumn);
+
         // Simple heuristic: if either column is primary key, it's likely one-to-many
         if (fromCol?.isPrimary && !toCol?.isPrimary) {
-          detectedCardinality = 'one-to-many';
+          detectedCardinality = "one-to-many";
         } else if (!fromCol?.isPrimary && toCol?.isPrimary) {
-          detectedCardinality = 'many-to-one';
+          detectedCardinality = "many-to-one";
         } else if (fromCol?.isPrimary && toCol?.isPrimary) {
-          detectedCardinality = 'one-to-one';
+          detectedCardinality = "one-to-one";
         } else {
-          detectedCardinality = 'one-to-many'; // Default
+          detectedCardinality = "one-to-many"; // Default
         }
       } else {
-        detectedCardinality = 'one-to-many'; // Default
+        detectedCardinality = "one-to-many"; // Default
       }
     }
 
@@ -131,7 +131,7 @@ export const useSchemaStore = defineStore("schema", () => {
   };
 
   const setGovernmentMode = (isGovernmentMode: boolean): void => {
-    canvas.isGovernmentMode = isGovernmentMode;
+    canvas.isClassicMode = isGovernmentMode;
   };
 
   const clearSchema = (): void => {
@@ -143,7 +143,7 @@ export const useSchemaStore = defineStore("schema", () => {
     canvas.selectedTable = null;
     canvas.isDragging = false;
     canvas.isPanning = false;
-    canvas.isGovernmentMode = false;
+    canvas.isClassicMode = false;
   };
 
   const parseSchemaData = (schemaText: string): void => {
@@ -205,49 +205,90 @@ export const useSchemaStore = defineStore("schema", () => {
       addTable(tableName, columns, x, y);
     });
 
-    // Add relationships
+    // Add relationships with explicit cardinalities
+    const processedRelationships = new Set<string>();
+
     schemaData.forEach((row) => {
       if (row.foreignTable && row.foreignColumn) {
+        const relationshipKey = `${row.table}-${row.column}-${row.foreignTable}-${row.foreignColumn}`;
+
+        if (processedRelationships.has(relationshipKey)) {
+          return; // Skip duplicates
+        }
+        processedRelationships.add(relationshipKey);
+
+        let cardinality:
+          | "one-to-one"
+          | "one-to-many"
+          | "many-to-one"
+          | "many-to-many" = "one-to-many";
+
+        // Check if this is a junction table (has multiple foreign keys)
+        const tableForeignKeys = schemaData.filter(
+          (s) =>
+            s.table === row.table && s.foreignTable && s.foreignTable.trim()
+        );
+
+        if (tableForeignKeys.length >= 2) {
+          // Junction table with multiple foreign keys = many-to-many
+          cardinality = "many-to-many";
+        } else if (
+          row.constraints.toLowerCase().includes("unique") ||
+          row.constraints.toLowerCase().includes("primary key")
+        ) {
+          // Unique or primary key constraint = one-to-one
+          cardinality = "one-to-one";
+        } else {
+          // Default = one-to-many
+          cardinality = "one-to-many";
+        }
+
+        console.log(
+          `Adding relationship: ${row.table}.${row.column} -> ${row.foreignTable}.${row.foreignColumn} (${cardinality})`
+        );
+
         addRelationship(
           row.table,
           row.column,
           row.foreignTable,
-          row.foreignColumn
+          row.foreignColumn,
+          cardinality
         );
       }
     });
   };
 
   const getSampleData = (): string => {
-    return `database,public,countries,id,1,uuid,,PRIMARY KEY,,,
-database,public,countries,name,2,varchar,255,NOT NULL,,,
-database,public,countries,code,3,varchar,2,UNIQUE,,,
-database,public,provinces,id,1,uuid,,PRIMARY KEY,,,
-database,public,provinces,name,2,varchar,255,NOT NULL,,,
-database,public,provinces,country_id,3,uuid,,FOREIGN KEY,countries,id,
-database,public,users,id,1,uuid,,PRIMARY KEY,,,
-database,public,users,email,2,varchar,255,UNIQUE,,,
+    return `database,public,users,id,1,uuid,,PRIMARY KEY,,,
+database,public,users,email,2,varchar,255,UNIQUE NOT NULL,,,
 database,public,users,name,3,varchar,255,NOT NULL,,,
-database,public,users,province_id,4,uuid,,FOREIGN KEY,provinces,id,
+database,public,users,manager_id,4,uuid,,FOREIGN KEY,users,id,
 database,public,user_profiles,user_id,1,uuid,,PRIMARY KEY FOREIGN KEY,users,id,
 database,public,user_profiles,bio,2,text,,,,,
 database,public,user_profiles,avatar_url,3,varchar,500,,,,
-database,public,user_profiles,created_at,4,timestamp,,DEFAULT NOW(),,,
-database,public,posts,id,1,uuid,,PRIMARY KEY,,,
-database,public,posts,title,2,varchar,500,NOT NULL,,,
-database,public,posts,content,3,text,,,,,
-database,public,posts,author_id,4,uuid,,FOREIGN KEY,users,id,
-database,public,posts,created_at,5,timestamp,,DEFAULT NOW(),,,
-database,public,categories,id,1,uuid,,PRIMARY KEY,,,
-database,public,categories,name,2,varchar,255,NOT NULL,,,
-database,public,categories,description,3,text,,,,,
-database,public,post_categories,post_id,1,uuid,,FOREIGN KEY,posts,id,
-database,public,post_categories,category_id,2,uuid,,FOREIGN KEY,categories,id,
-database,public,comments,id,1,uuid,,PRIMARY KEY,,,
-database,public,comments,content,2,text,NOT NULL,,,
-database,public,comments,post_id,3,uuid,,FOREIGN KEY,posts,id,
-database,public,comments,author_id,4,uuid,,FOREIGN KEY,users,id,
-database,public,comments,created_at,5,timestamp,,DEFAULT NOW(),,,`;
+database,public,companies,id,1,uuid,,PRIMARY KEY,,,
+database,public,companies,name,2,varchar,255,NOT NULL,,,
+database,public,companies,ceo_user_id,3,uuid,,UNIQUE FOREIGN KEY,users,id,
+database,public,departments,id,1,uuid,,PRIMARY KEY,,,
+database,public,departments,name,2,varchar,255,NOT NULL,,,
+database,public,departments,company_id,3,uuid,,NOT NULL FOREIGN KEY,companies,id,
+database,public,employees,id,1,uuid,,PRIMARY KEY,,,
+database,public,employees,name,2,varchar,255,NOT NULL,,,
+database,public,employees,department_id,3,uuid,,NOT NULL FOREIGN KEY,departments,id,
+database,public,employees,supervisor_id,4,uuid,,FOREIGN KEY,employees,id,
+database,public,projects,id,1,uuid,,PRIMARY KEY,,,
+database,public,projects,name,2,varchar,255,NOT NULL,,,
+database,public,projects,description,3,text,,,,,
+database,public,project_assignments,id,1,uuid,,PRIMARY KEY,,,
+database,public,project_assignments,employee_id,2,uuid,,NOT NULL FOREIGN KEY,employees,id,
+database,public,project_assignments,project_id,3,uuid,,NOT NULL FOREIGN KEY,projects,id,
+database,public,project_assignments,role,4,varchar,100,,,,
+database,public,skills,id,1,uuid,,PRIMARY KEY,,,
+database,public,skills,name,2,varchar,255,NOT NULL,,,
+database,public,employee_skills,id,1,uuid,,PRIMARY KEY,,,
+database,public,employee_skills,employee_id,2,uuid,,NOT NULL FOREIGN KEY,employees,id,
+database,public,employee_skills,skill_id,3,uuid,,NOT NULL FOREIGN KEY,skills,id,
+database,public,employee_skills,proficiency,4,varchar,50,,,,`;
   };
 
   const deleteTable = (tableId: string): void => {

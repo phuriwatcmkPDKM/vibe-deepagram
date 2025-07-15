@@ -223,9 +223,9 @@ onKeyStroke("1", (e) => {
 // Optimized relationship path calculation with improved connection logic
 const relationshipPaths = computed(() => {
   const paths = new Map<string, string>();
-  
+
   // Create lookup maps for better performance
-  const tableMap = new Map(tables.value.map(t => [t.name, t]));
+  const tableMap = new Map(tables.value.map((t) => [t.name, t]));
 
   relationships.value.forEach((relationship) => {
     const fromTable = tableMap.get(relationship.fromTable);
@@ -237,46 +237,50 @@ const relationshipPaths = computed(() => {
     }
 
     // Find column indices with fallback
-    const fromColumnIndex = Math.max(0, 
-      fromTable.columns.findIndex(c => c.name === relationship.fromColumn)
+    const fromColumnIndex = Math.max(
+      0,
+      fromTable.columns.findIndex((c) => c.name === relationship.fromColumn)
     );
-    const toColumnIndex = Math.max(0,
-      toTable.columns.findIndex(c => c.name === relationship.toColumn)
+    const toColumnIndex = Math.max(
+      0,
+      toTable.columns.findIndex((c) => c.name === relationship.toColumn)
     );
 
     // Calculate precise connection points based on updated row height (42px)
     const headerHeight = 40;
     const rowHeight = 42;
     const rowCenter = rowHeight / 2;
-    
-    const fromY = fromTable.y + headerHeight + (fromColumnIndex * rowHeight) + rowCenter;
-    const toY = toTable.y + headerHeight + (toColumnIndex * rowHeight) + rowCenter;
+
+    const fromY =
+      fromTable.y + headerHeight + fromColumnIndex * rowHeight + rowCenter;
+    const toY =
+      toTable.y + headerHeight + toColumnIndex * rowHeight + rowCenter;
 
     // Intelligent connection point selection
     const fromCenter = { x: fromTable.x + fromTable.width / 2, y: fromY };
     const toCenter = { x: toTable.x + toTable.width / 2, y: toY };
-    
+
     let fromX: number, toX: number;
-    let fromSide: 'left' | 'right' | 'top' | 'bottom';
-    let toSide: 'left' | 'right' | 'top' | 'bottom';
+    let fromSide: "left" | "right" | "top" | "bottom";
+    let toSide: "left" | "right" | "top" | "bottom";
 
     // Calculate best connection sides based on table positions
     const deltaX = toCenter.x - fromCenter.x;
     const deltaY = toCenter.y - fromCenter.y;
-    
+
     // Determine optimal connection sides
     if (Math.abs(deltaX) > Math.abs(deltaY)) {
       // Horizontal connection preferred
       if (deltaX > 0) {
         // From left to right
-        fromSide = 'right';
-        toSide = 'left';
+        fromSide = "right";
+        toSide = "left";
         fromX = fromTable.x + fromTable.width;
         toX = toTable.x;
       } else {
         // From right to left
-        fromSide = 'left';
-        toSide = 'right';
+        fromSide = "left";
+        toSide = "right";
         fromX = fromTable.x;
         toX = toTable.x + toTable.width;
       }
@@ -284,14 +288,14 @@ const relationshipPaths = computed(() => {
       // Vertical connection preferred for closer tables
       if (deltaY > 0) {
         // From top to bottom
-        fromSide = 'bottom';
-        toSide = 'top';
+        fromSide = "bottom";
+        toSide = "top";
         fromX = fromCenter.x;
         toX = toCenter.x;
       } else {
         // From bottom to top
-        fromSide = 'top';
-        toSide = 'bottom';
+        fromSide = "top";
+        toSide = "bottom";
         fromX = fromCenter.x;
         toX = toCenter.x;
       }
@@ -299,20 +303,24 @@ const relationshipPaths = computed(() => {
 
     // Generate smooth path based on connection type
     let path: string;
-    
-    if (fromSide === 'right' || fromSide === 'left') {
+
+    if (fromSide === "right" || fromSide === "left") {
       // Horizontal bezier curve
       const horizontalOffset = Math.min(Math.abs(deltaX) * 0.4, 80);
-      const control1X = fromX + (fromSide === 'right' ? horizontalOffset : -horizontalOffset);
-      const control2X = toX + (toSide === 'left' ? -horizontalOffset : horizontalOffset);
-      
+      const control1X =
+        fromX + (fromSide === "right" ? horizontalOffset : -horizontalOffset);
+      const control2X =
+        toX + (toSide === "left" ? -horizontalOffset : horizontalOffset);
+
       path = `M${fromX},${fromY}C${control1X},${fromY},${control2X},${toY},${toX},${toY}`;
     } else {
       // Vertical bezier curve
       const verticalOffset = Math.min(Math.abs(deltaY) * 0.4, 60);
-      const control1Y = fromY + (fromSide === 'bottom' ? verticalOffset : -verticalOffset);
-      const control2Y = toY + (toSide === 'top' ? -verticalOffset : verticalOffset);
-      
+      const control1Y =
+        fromY + (fromSide === "bottom" ? verticalOffset : -verticalOffset);
+      const control2Y =
+        toY + (toSide === "top" ? -verticalOffset : verticalOffset);
+
       path = `M${fromX},${fromY}C${fromX},${control1Y},${toX},${control2Y},${toX},${toY}`;
     }
 
@@ -328,68 +336,134 @@ const getRelationshipPath = (relationship: Relationship): string => {
 };
 
 // Get cardinality label for a specific side of the relationship
-const getCardinalityLabel = (relationship: Relationship, side: 'from' | 'to'): string => {
-  const cardinality = relationship.cardinality || 'one-to-many';
-  
+const getCardinalityLabel = (
+  relationship: Relationship,
+  side: "from" | "to"
+): string => {
+  const cardinality = relationship.cardinality || "one-to-many";
+
   switch (cardinality) {
-    case 'one-to-one':
-      return '1';
-    case 'one-to-many':
-      return side === 'from' ? '1' : 'N';
-    case 'many-to-one':
-      return side === 'from' ? 'M' : '1';
-    case 'many-to-many':
-      return side === 'from' ? 'M' : 'N';
+    case "one-to-one":
+      return "1";
+    case "one-to-many":
+      return side === "from" ? "1" : "N";
+    case "many-to-one":
+      return side === "from" ? "M" : "1";
+    case "many-to-many":
+      return side === "from" ? "M" : "N";
     default:
-      return side === 'from' ? '1' : 'N';
+      return side === "from" ? "1" : "N";
   }
 };
 
-// Get IE-style marker for government mode
-const getIEMarker = (relationship: Relationship, side: 'from' | 'to'): string => {
-  const cardinality = relationship.cardinality || 'one-to-many';
-  
+// Get IE-style marker for classic mode
+// Simplified to use only the 4 core IE notation symbols:
+// - "One or More" (||<) = mandatory participation, one or more instances
+// - "Zero or More" (o<) = optional participation, zero or more instances
+// - "One and Only One" (||) = mandatory participation, exactly one instance
+// - "Zero or One" (o|) = optional participation, zero or one instance
+const getIEMarker = (
+  relationship: Relationship,
+  side: "from" | "to"
+): string => {
+  const cardinality = relationship.cardinality || "one-to-many";
+
+  // Determine if relationship is mandatory or optional
+  const isFromMandatory = checkIfMandatory(relationship, "from");
+  const isToMandatory = checkIfMandatory(relationship, "to");
+
+  console.log(
+    `Getting IE marker for ${relationship.fromTable}->${
+      relationship.toTable
+    }, cardinality: ${cardinality}, side: ${side}, mandatory: ${
+      side === "from" ? isFromMandatory : isToMandatory
+    }`
+  );
+
   switch (cardinality) {
-    case 'one-to-one':
-      return 'ie-one-to-one'; // Single line both ends
-    case 'one-to-many':
-      return side === 'from' ? 'ie-one' : 'ie-many'; // Single line → crow's foot
-    case 'many-to-one':
-      return side === 'from' ? 'ie-many' : 'ie-one'; // Crow's foot → single line
-    case 'many-to-many':
-      return 'ie-many'; // Crow's foot both ends
+    case "one-to-one":
+      if (side === "from") {
+        return isFromMandatory ? "ie-one-only" : "ie-zero-one";
+      } else {
+        return isToMandatory ? "ie-one-only" : "ie-zero-one";
+      }
+    case "one-to-many":
+      if (side === "from") {
+        return isFromMandatory ? "ie-one-only" : "ie-zero-one"; // "one and only one" vs "zero or one"
+      } else {
+        return isToMandatory ? "ie-one-or-more" : "ie-zero-many"; // "one or more" vs "zero or more"
+      }
+    case "many-to-one":
+      if (side === "from") {
+        return isFromMandatory ? "ie-one-or-more" : "ie-zero-many"; // "one or more" vs "zero or more"
+      } else {
+        return isToMandatory ? "ie-one-only" : "ie-zero-one"; // "one and only one" vs "zero or one"
+      }
+    case "many-to-many":
+      if (side === "from") {
+        return isFromMandatory ? "ie-one-or-more" : "ie-zero-many"; // "one or more" vs "zero or more"
+      } else {
+        return isToMandatory ? "ie-one-or-more" : "ie-zero-many"; // "one or more" vs "zero or more"
+      }
     default:
-      return side === 'from' ? 'ie-one' : 'ie-many';
+      return side === "from" ? "ie-one-only" : "ie-one-or-more";
   }
+};
+
+// Helper function to determine if relationship side is mandatory
+const checkIfMandatory = (
+  relationship: Relationship,
+  side: "from" | "to"
+): boolean => {
+  const targetTable =
+    side === "from" ? relationship.fromTable : relationship.toTable;
+  const targetColumn =
+    side === "from" ? relationship.fromColumn : relationship.toColumn;
+
+  const table = tables.value.find((t) => t.name === targetTable);
+  if (!table) return false;
+
+  const column = table.columns.find((c) => c.name === targetColumn);
+  if (!column) return false;
+
+  // Consider foreign key columns as mandatory if they're marked as NOT NULL
+  // Consider primary key columns as mandatory
+  return column.isPrimary || column.isNotNull || column.isForeign;
 };
 
 // Get position for cardinality label on the relationship line
-const getCardinalityPosition = (relationship: Relationship, side: 'from' | 'to'): { x: number; y: number } => {
-  const fromTable = tables.value.find(t => t.name === relationship.fromTable);
-  const toTable = tables.value.find(t => t.name === relationship.toTable);
+const getCardinalityPosition = (
+  relationship: Relationship,
+  side: "from" | "to"
+): { x: number; y: number } => {
+  const fromTable = tables.value.find((t) => t.name === relationship.fromTable);
+  const toTable = tables.value.find((t) => t.name === relationship.toTable);
 
   if (!fromTable || !toTable) {
     return { x: 0, y: 0 };
   }
 
-  const fromColumnIndex = Math.max(0, 
-    fromTable.columns.findIndex(c => c.name === relationship.fromColumn)
+  const fromColumnIndex = Math.max(
+    0,
+    fromTable.columns.findIndex((c) => c.name === relationship.fromColumn)
   );
-  const toColumnIndex = Math.max(0,
-    toTable.columns.findIndex(c => c.name === relationship.toColumn)
+  const toColumnIndex = Math.max(
+    0,
+    toTable.columns.findIndex((c) => c.name === relationship.toColumn)
   );
 
   // Calculate connection points (same as in relationshipPaths)
   const headerHeight = 40;
   const rowHeight = 42;
   const rowCenter = rowHeight / 2;
-  
-  const fromY = fromTable.y + headerHeight + (fromColumnIndex * rowHeight) + rowCenter;
-  const toY = toTable.y + headerHeight + (toColumnIndex * rowHeight) + rowCenter;
+
+  const fromY =
+    fromTable.y + headerHeight + fromColumnIndex * rowHeight + rowCenter;
+  const toY = toTable.y + headerHeight + toColumnIndex * rowHeight + rowCenter;
 
   const fromCenter = { x: fromTable.x + fromTable.width / 2, y: fromY };
   const toCenter = { x: toTable.x + toTable.width / 2, y: toY };
-  
+
   let fromX: number, toX: number;
   const deltaX = toCenter.x - fromCenter.x;
   const deltaY = toCenter.y - fromCenter.y;
@@ -410,16 +484,16 @@ const getCardinalityPosition = (relationship: Relationship, side: 'from' | 'to')
 
   // Position labels near the tables (20% from each end)
   const labelOffset = 0.2;
-  
-  if (side === 'from') {
+
+  if (side === "from") {
     return {
       x: fromX + (toX - fromX) * labelOffset,
-      y: fromY + (toY - fromY) * labelOffset
+      y: fromY + (toY - fromY) * labelOffset,
     };
   } else {
     return {
       x: fromX + (toX - fromX) * (1 - labelOffset),
-      y: fromY + (toY - fromY) * (1 - labelOffset)
+      y: fromY + (toY - fromY) * (1 - labelOffset),
     };
   }
 };
@@ -461,12 +535,10 @@ const viewportRect = computed(() => {
 <template>
   <div
     ref="containerRef"
-    class="relative w-full h-full overflow-hidden select-none"
+    class="relative w-full h-full overflow-hidden select-none bg-gray-50"
     :class="{
       'cursor-grab': !canvas.isDragging && !isDragging,
       'cursor-grabbing': canvas.isDragging || isDragging,
-      'bg-gray-50': !canvas.isGovernmentMode,
-      'bg-blue-50': canvas.isGovernmentMode,
     }"
     @mousedown="onMouseDown"
     @wheel="onWheel"
@@ -476,9 +548,8 @@ const viewportRect = computed(() => {
     <div
       class="absolute inset-0 pointer-events-none"
       :style="{
-        backgroundImage: canvas.isGovernmentMode 
-          ? `radial-gradient(circle, rgba(75, 85, 99, 0.3) 1px, transparent 1px)` 
-          : `radial-gradient(circle, rgba(156, 163, 175, 0.4) 1px, transparent 1px)`,
+        backgroundImage:
+          'radial-gradient(circle, rgba(156, 163, 175, 0.4) 1px, transparent 1px)',
         backgroundSize: `${gridPattern.size}px ${gridPattern.size}px`,
         backgroundPosition: `${gridPattern.x}px ${gridPattern.y}px`,
         opacity: gridPattern.opacity,
@@ -498,108 +569,252 @@ const viewportRect = computed(() => {
         style="overflow: visible"
       >
         <defs>
-          <!-- Information Engineering Style Markers for Government Mode -->
-          <!-- IE One to One (single line both ends) -->
-          <marker
-            id="ie-one-to-one"
-            markerWidth="8"
-            markerHeight="16"
-            refX="8"
-            refY="8"
-            orient="auto"
-            markerUnits="userSpaceOnUse"
-            viewBox="0 0 8 16"
-          >
-            <line x1="0" y1="2" x2="0" y2="14" stroke="#000000" stroke-width="3" />
-          </marker>
-
-          <!-- IE One to Many - One End (single line) -->
-          <marker
-            id="ie-one"
-            markerWidth="8"
-            markerHeight="16"
-            refX="8"
-            refY="8"
-            orient="auto"
-            markerUnits="userSpaceOnUse"
-            viewBox="0 0 8 16"
-          >
-            <line x1="0" y1="2" x2="0" y2="14" stroke="#000000" stroke-width="3" />
-          </marker>
-
-          <!-- IE One to Many - Many End (crow's foot) -->
-          <marker
-            id="ie-many"
-            markerWidth="20"
-            markerHeight="20"
-            refX="20"
-            refY="10"
-            orient="auto"
-            markerUnits="userSpaceOnUse"
-            viewBox="0 0 20 20"
-          >
-            <path d="M 0,10 L 20,10 M 14,4 L 20,10 L 14,16" stroke="#000000" stroke-width="3" fill="none" stroke-linejoin="round" />
-          </marker>
-
-          <!-- IE One or More - Double line + crow's foot -->
-          <marker
-            id="ie-one-or-more"
-            markerWidth="28"
-            markerHeight="20"
-            refX="28"
-            refY="10"
-            orient="auto"
-            markerUnits="userSpaceOnUse"
-            viewBox="0 0 28 20"
-          >
-            <line x1="0" y1="4" x2="0" y2="16" stroke="#000000" stroke-width="3" />
-            <line x1="6" y1="4" x2="6" y2="16" stroke="#000000" stroke-width="3" />
-            <path d="M 8,10 L 28,10 M 22,4 L 28,10 L 22,16" stroke="#000000" stroke-width="3" fill="none" stroke-linejoin="round" />
-          </marker>
-
-          <!-- IE One and Only One - Double line -->
+          <!-- Information Engineering Style Markers for classic Mode -->
+          <!-- IE One and Only One - Double line (mandatory one) -->
           <marker
             id="ie-one-only"
-            markerWidth="14"
-            markerHeight="16"
-            refX="14"
-            refY="8"
+            markerWidth="12"
+            markerHeight="18"
+            refX="12"
+            refY="9"
             orient="auto"
             markerUnits="userSpaceOnUse"
-            viewBox="0 0 14 16"
+            viewBox="0 0 12 18"
           >
-            <line x1="0" y1="2" x2="0" y2="14" stroke="#000000" stroke-width="3" />
-            <line x1="6" y1="2" x2="6" y2="14" stroke="#000000" stroke-width="3" />
+            <line
+              x1="0"
+              y1="2"
+              x2="0"
+              y2="16"
+              stroke="#1a1a1a"
+              stroke-width="2.5"
+              stroke-linecap="round"
+            />
+            <line
+              x1="5"
+              y1="2"
+              x2="5"
+              y2="16"
+              stroke="#1a1a1a"
+              stroke-width="2.5"
+              stroke-linecap="round"
+            />
           </marker>
 
-          <!-- IE Zero or One - Circle + line -->
+          <!-- IE Zero or One - Circle + line (optional one) -->
           <marker
             id="ie-zero-one"
-            markerWidth="20"
-            markerHeight="16"
-            refX="20"
-            refY="8"
+            markerWidth="18"
+            markerHeight="18"
+            refX="18"
+            refY="9"
             orient="auto"
             markerUnits="userSpaceOnUse"
-            viewBox="0 0 20 16"
+            viewBox="0 0 18 18"
           >
-            <circle cx="5" cy="8" r="5" fill="none" stroke="#000000" stroke-width="3" />
-            <line x1="12" y1="2" x2="12" y2="14" stroke="#000000" stroke-width="3" />
+            <circle
+              cx="4"
+              cy="9"
+              r="4"
+              fill="none"
+              stroke="#1a1a1a"
+              stroke-width="2.5"
+            />
+            <line
+              x1="12"
+              y1="2"
+              x2="12"
+              y2="16"
+              stroke="#1a1a1a"
+              stroke-width="2.5"
+              stroke-linecap="round"
+            />
           </marker>
 
-          <!-- IE Zero or Many - Circle + crow's foot -->
+          <!-- IE One or More - Double line + crow's foot (one or more, mandatory participation) -->
           <marker
-            id="ie-zero-many"
-            markerWidth="32"
+            id="ie-one-or-more"
+            markerWidth="26"
             markerHeight="20"
-            refX="32"
+            refX="26"
             refY="10"
             orient="auto"
             markerUnits="userSpaceOnUse"
-            viewBox="0 0 32 20"
+            viewBox="0 0 26 20"
           >
-            <circle cx="5" cy="10" r="5" fill="none" stroke="#000000" stroke-width="3" />
-            <path d="M 12,10 L 32,10 M 26,4 L 32,10 L 26,16" stroke="#000000" stroke-width="3" fill="none" stroke-linejoin="round" />
+            <!-- Double vertical lines for "one or more" -->
+            <line
+              x1="0"
+              y1="3"
+              x2="0"
+              y2="17"
+              stroke="#1a1a1a"
+              stroke-width="2.2"
+              stroke-linecap="round"
+            />
+            <line
+              x1="4"
+              y1="3"
+              x2="4"
+              y2="17"
+              stroke="#1a1a1a"
+              stroke-width="2.2"
+              stroke-linecap="round"
+            />
+
+            <!-- Connection line to crow's foot -->
+            <line
+              x1="7"
+              y1="10"
+              x2="20"
+              y2="10"
+              stroke="#1a1a1a"
+              stroke-width="2.2"
+              stroke-linecap="round"
+            />
+
+            <!-- Crow's foot - three lines forming the "many" symbol -->
+            <line
+              x1="20"
+              y1="10"
+              x2="26"
+              y2="4"
+              stroke="#1a1a1a"
+              stroke-width="2.2"
+              stroke-linecap="round"
+            />
+            <line
+              x1="20"
+              y1="10"
+              x2="26"
+              y2="10"
+              stroke="#1a1a1a"
+              stroke-width="2.2"
+              stroke-linecap="round"
+            />
+            <line
+              x1="20"
+              y1="10"
+              x2="26"
+              y2="16"
+              stroke="#1a1a1a"
+              stroke-width="2.2"
+              stroke-linecap="round"
+            />
+          </marker>
+
+          <!-- IE Zero or More - Circle + crow's foot (zero or more, optional participation) -->
+          <marker
+            id="ie-zero-many"
+            markerWidth="30"
+            markerHeight="20"
+            refX="30"
+            refY="10"
+            orient="auto"
+            markerUnits="userSpaceOnUse"
+            viewBox="0 0 30 20"
+          >
+            <!-- Circle for "zero or" -->
+            <circle
+              cx="4"
+              cy="10"
+              r="4"
+              fill="none"
+              stroke="#1a1a1a"
+              stroke-width="2.2"
+            />
+
+            <!-- Connection line to crow's foot -->
+            <line
+              x1="10"
+              y1="10"
+              x2="24"
+              y2="10"
+              stroke="#1a1a1a"
+              stroke-width="2.2"
+              stroke-linecap="round"
+            />
+
+            <!-- Crow's foot - three lines forming the "many" symbol -->
+            <line
+              x1="24"
+              y1="10"
+              x2="30"
+              y2="4"
+              stroke="#1a1a1a"
+              stroke-width="2.2"
+              stroke-linecap="round"
+            />
+            <line
+              x1="24"
+              y1="10"
+              x2="30"
+              y2="10"
+              stroke="#1a1a1a"
+              stroke-width="2.2"
+              stroke-linecap="round"
+            />
+            <line
+              x1="24"
+              y1="10"
+              x2="30"
+              y2="16"
+              stroke="#1a1a1a"
+              stroke-width="2.2"
+              stroke-linecap="round"
+            />
+          </marker>
+
+          <!-- IE Simple Many - Crow's foot only (basic many) -->
+          <marker
+            id="ie-many"
+            markerWidth="18"
+            markerHeight="20"
+            refX="18"
+            refY="10"
+            orient="auto"
+            markerUnits="userSpaceOnUse"
+            viewBox="0 0 18 20"
+          >
+            <!-- Connection line -->
+            <line
+              x1="0"
+              y1="10"
+              x2="12"
+              y2="10"
+              stroke="#1a1a1a"
+              stroke-width="2.2"
+              stroke-linecap="round"
+            />
+
+            <!-- Crow's foot - three lines forming the "many" symbol -->
+            <line
+              x1="12"
+              y1="10"
+              x2="18"
+              y2="4"
+              stroke="#1a1a1a"
+              stroke-width="2.2"
+              stroke-linecap="round"
+            />
+            <line
+              x1="12"
+              y1="10"
+              x2="18"
+              y2="10"
+              stroke="#1a1a1a"
+              stroke-width="2.2"
+              stroke-linecap="round"
+            />
+            <line
+              x1="12"
+              y1="10"
+              x2="18"
+              y2="16"
+              stroke="#1a1a1a"
+              stroke-width="2.2"
+              stroke-linecap="round"
+            />
           </marker>
 
           <!-- Original colored markers for normal mode -->
@@ -613,8 +828,27 @@ const viewportRect = computed(() => {
             markerUnits="strokeWidth"
             viewBox="0 0 16 12"
           >
-            <rect x="2" y="2" width="12" height="8" fill="white" stroke="#3b82f6" stroke-width="1" rx="2" />
-            <text x="8" y="8" text-anchor="middle" font-family="Arial, sans-serif" font-size="7" font-weight="bold" fill="#3b82f6">1</text>
+            <rect
+              x="2"
+              y="2"
+              width="12"
+              height="8"
+              fill="white"
+              stroke="#3b82f6"
+              stroke-width="1"
+              rx="2"
+            />
+            <text
+              x="8"
+              y="8"
+              text-anchor="middle"
+              font-family="Arial, sans-serif"
+              font-size="7"
+              font-weight="bold"
+              fill="#3b82f6"
+            >
+              1
+            </text>
           </marker>
 
           <marker
@@ -627,8 +861,27 @@ const viewportRect = computed(() => {
             markerUnits="strokeWidth"
             viewBox="0 0 16 12"
           >
-            <rect x="2" y="2" width="12" height="8" fill="white" stroke="#3b82f6" stroke-width="1" rx="2" />
-            <text x="8" y="8" text-anchor="middle" font-family="Arial, sans-serif" font-size="7" font-weight="bold" fill="#3b82f6">N</text>
+            <rect
+              x="2"
+              y="2"
+              width="12"
+              height="8"
+              fill="white"
+              stroke="#3b82f6"
+              stroke-width="1"
+              rx="2"
+            />
+            <text
+              x="8"
+              y="8"
+              text-anchor="middle"
+              font-family="Arial, sans-serif"
+              font-size="7"
+              font-weight="bold"
+              fill="#3b82f6"
+            >
+              N
+            </text>
           </marker>
 
           <marker
@@ -641,8 +894,27 @@ const viewportRect = computed(() => {
             markerUnits="strokeWidth"
             viewBox="0 0 16 12"
           >
-            <rect x="2" y="2" width="12" height="8" fill="white" stroke="#3b82f6" stroke-width="1" rx="2" />
-            <text x="8" y="8" text-anchor="middle" font-family="Arial, sans-serif" font-size="7" font-weight="bold" fill="#3b82f6">M</text>
+            <rect
+              x="2"
+              y="2"
+              width="12"
+              height="8"
+              fill="white"
+              stroke="#3b82f6"
+              stroke-width="1"
+              rx="2"
+            />
+            <text
+              x="8"
+              y="8"
+              text-anchor="middle"
+              font-family="Arial, sans-serif"
+              font-size="7"
+              font-weight="bold"
+              fill="#3b82f6"
+            >
+              M
+            </text>
           </marker>
 
           <marker
@@ -655,64 +927,104 @@ const viewportRect = computed(() => {
             markerUnits="strokeWidth"
             viewBox="0 0 20 12"
           >
-            <rect x="1" y="2" width="18" height="8" fill="white" stroke="#3b82f6" stroke-width="1" rx="2" />
-            <text x="10" y="8" text-anchor="middle" font-family="Arial, sans-serif" font-size="6" font-weight="bold" fill="#3b82f6">M:N</text>
+            <rect
+              x="1"
+              y="2"
+              width="18"
+              height="8"
+              fill="white"
+              stroke="#3b82f6"
+              stroke-width="1"
+              rx="2"
+            />
+            <text
+              x="10"
+              y="8"
+              text-anchor="middle"
+              font-family="Arial, sans-serif"
+              font-size="6"
+              font-weight="bold"
+              fill="#3b82f6"
+            >
+              M:N
+            </text>
           </marker>
         </defs>
 
         <g v-if="canvas.scale > 0.1">
-          <!-- Relationship lines with IE-style markers in government mode -->
+          <!-- Relationship lines with IE-style markers in classic mode -->
           <path
             v-for="relationship in relationships"
             :key="relationship.id"
             :d="getRelationshipPath(relationship)"
-            :stroke="canvas.isGovernmentMode ? '#000000' : '#3b82f6'"
-            :stroke-width="canvas.isGovernmentMode ? Math.max(2, 4 / canvas.scale) : Math.max(1, 3 / canvas.scale)"
+            :stroke="canvas.isClassicMode ? '#1a1a1a' : '#3b82f6'"
+            :stroke-width="
+              canvas.isClassicMode
+                ? Math.max(2.5, 3 / canvas.scale)
+                : Math.max(1, 3 / canvas.scale)
+            "
             fill="none"
             stroke-linecap="round"
             stroke-linejoin="round"
-            :opacity="Math.max(0.5, Math.min(1, canvas.scale * 2))"
+            :opacity="
+              canvas.isClassicMode
+                ? 0.9
+                : Math.max(0.5, Math.min(1, canvas.scale * 2))
+            "
             class="transition-opacity duration-200"
-            :marker-start="canvas.isGovernmentMode ? `url(#${getIEMarker(relationship, 'from')})` : ''"
-            :marker-end="canvas.isGovernmentMode ? `url(#${getIEMarker(relationship, 'to')})` : ''"
+            :marker-start="
+              canvas.isClassicMode
+                ? `url(#${getIEMarker(relationship, 'from')})`
+                : ''
+            "
+            :marker-end="
+              canvas.isClassicMode
+                ? `url(#${getIEMarker(relationship, 'to')})`
+                : ''
+            "
           />
-          
-          <!-- Cardinality labels on lines (only in normal mode, not government mode) -->
-          <g v-if="!canvas.isGovernmentMode" v-for="relationship in relationships" :key="`label-${relationship.id}`">
-            <text
-              v-if="getCardinalityLabel(relationship, 'from')"
-              :x="getCardinalityPosition(relationship, 'from').x"
-              :y="getCardinalityPosition(relationship, 'from').y"
-              text-anchor="middle"
-              dominant-baseline="middle"
-              font-family="Arial, sans-serif"
-              :font-size="Math.max(10, 12 / canvas.scale)"
-              font-weight="bold"
-              fill="#3b82f6"
-              stroke="white"
-              :stroke-width="Math.max(2, 3 / canvas.scale)"
-              paint-order="stroke fill"
+
+          <!-- Cardinality labels on lines (only in normal mode, not classic mode) -->
+          <template v-if="!canvas.isClassicMode">
+            <g
+              v-for="relationship in relationships"
+              :key="`label-${relationship.id}`"
             >
-              {{ getCardinalityLabel(relationship, 'from') }}
-            </text>
-            
-            <text
-              v-if="getCardinalityLabel(relationship, 'to')"
-              :x="getCardinalityPosition(relationship, 'to').x"
-              :y="getCardinalityPosition(relationship, 'to').y"
-              text-anchor="middle"
-              dominant-baseline="middle"
-              font-family="Arial, sans-serif"
-              :font-size="Math.max(10, 12 / canvas.scale)"
-              font-weight="bold"
-              fill="#3b82f6"
-              stroke="white"
-              :stroke-width="Math.max(2, 3 / canvas.scale)"
-              paint-order="stroke fill"
-            >
-              {{ getCardinalityLabel(relationship, 'to') }}
-            </text>
-          </g>
+              <text
+                v-if="getCardinalityLabel(relationship, 'from')"
+                :x="getCardinalityPosition(relationship, 'from').x"
+                :y="getCardinalityPosition(relationship, 'from').y"
+                text-anchor="middle"
+                dominant-baseline="middle"
+                font-family="Arial, sans-serif"
+                :font-size="Math.max(10, 12 / canvas.scale)"
+                font-weight="bold"
+                fill="#3b82f6"
+                stroke="white"
+                :stroke-width="Math.max(2, 3 / canvas.scale)"
+                paint-order="stroke fill"
+              >
+                {{ getCardinalityLabel(relationship, "from") }}
+              </text>
+
+              <text
+                v-if="getCardinalityLabel(relationship, 'to')"
+                :x="getCardinalityPosition(relationship, 'to').x"
+                :y="getCardinalityPosition(relationship, 'to').y"
+                text-anchor="middle"
+                dominant-baseline="middle"
+                font-family="Arial, sans-serif"
+                :font-size="Math.max(10, 12 / canvas.scale)"
+                font-weight="bold"
+                fill="#3b82f6"
+                stroke="white"
+                :stroke-width="Math.max(2, 3 / canvas.scale)"
+                paint-order="stroke fill"
+              >
+                {{ getCardinalityLabel(relationship, "to") }}
+              </text>
+            </g>
+          </template>
         </g>
       </svg>
 
@@ -742,11 +1054,7 @@ const viewportRect = computed(() => {
 
     <!-- Canvas Info -->
     <div
-      class="absolute top-4 left-4 backdrop-blur-sm rounded-lg px-3 py-2 text-xs shadow-sm z-20"
-      :class="{
-        'bg-white/90 text-gray-600': !canvas.isGovernmentMode,
-        'bg-blue-50/90 text-gray-700 border border-gray-400': canvas.isGovernmentMode,
-      }"
+      class="bg-white/90 text-gray-600 absolute top-4 left-4 backdrop-blur-sm rounded-lg px-3 py-2 text-xs shadow-sm z-20"
     >
       <div>{{ Math.round(canvas.scale * 100) }}% zoom</div>
       <div>{{ tables.length }} tables</div>
@@ -794,8 +1102,8 @@ const viewportRect = computed(() => {
       v-if="canvas.scale < 0.5 && tables.length > 0"
       class="absolute top-4 right-4 w-48 h-32 backdrop-blur-sm rounded-lg shadow-lg z-20 overflow-hidden"
       :class="{
-        'bg-white/90 border border-gray-200': !canvas.isGovernmentMode,
-        'bg-blue-50/90 border border-gray-400': canvas.isGovernmentMode,
+        'bg-white/90 border border-gray-200': !canvas.isClassicMode,
+        'bg-blue-50/90 border border-gray-400': canvas.isClassicMode,
       }"
     >
       <div
@@ -811,12 +1119,24 @@ const viewportRect = computed(() => {
               :y="table.y"
               :width="table.width"
               :height="table.height"
-              :fill="canvas.isGovernmentMode 
-                ? (canvas.selectedTable === table.id ? '#000000' : '#ffffff') 
-                : (canvas.selectedTable === table.id ? '#3b82f6' : '#e5e7eb')"
-              :stroke="canvas.isGovernmentMode 
-                ? (canvas.selectedTable === table.id ? '#374151' : '#000000') 
-                : (canvas.selectedTable === table.id ? '#1d4ed8' : '#9ca3af')"
+              :fill="
+                canvas.isClassicMode
+                  ? canvas.selectedTable === table.id
+                    ? '#000000'
+                    : '#ffffff'
+                  : canvas.selectedTable === table.id
+                  ? '#3b82f6'
+                  : '#e5e7eb'
+              "
+              :stroke="
+                canvas.isClassicMode
+                  ? canvas.selectedTable === table.id
+                    ? '#374151'
+                    : '#000000'
+                  : canvas.selectedTable === table.id
+                  ? '#1d4ed8'
+                  : '#9ca3af'
+              "
               stroke-width="1"
               rx="4"
             />

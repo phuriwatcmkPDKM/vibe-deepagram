@@ -21,7 +21,7 @@ const handleImport = (): void => {
 };
 
 const toggleGovernmentMode = (): void => {
-  schemaStore.setGovernmentMode(!canvas.value.isGovernmentMode);
+  schemaStore.setGovernmentMode(!canvas.value.isClassicMode);
 };
 
 // Set page title
@@ -60,12 +60,14 @@ useHead({
               Clear
             </button>
 
-            <button 
-              class="btn-secondary text-sm" 
-              :class="{ 'bg-gray-800 text-white': canvas.isGovernmentMode }"
+            <button
+              class="btn-secondary text-sm"
+              :class="{ 'bg-gray-800 text-white': canvas.isClassicMode }"
               @click="toggleGovernmentMode"
             >
-              {{ canvas.isGovernmentMode ? 'Exit Classic Mode' : 'Classic Diagram' }}
+              {{
+                canvas.isClassicMode ? "Exit Classic Mode" : "Classic Diagram"
+              }}
             </button>
           </div>
         </div>

@@ -26,7 +26,7 @@ export interface Relationship {
   fromColumn: string;
   toTable: string;
   toColumn: string;
-  cardinality?: 'one-to-one' | 'one-to-many' | 'many-to-one' | 'many-to-many';
+  cardinality?: "one-to-one" | "one-to-many" | "many-to-one" | "many-to-many";
 }
 
 export interface CanvasState {
@@ -36,7 +36,7 @@ export interface CanvasState {
   isDragging: boolean;
   isPanning: boolean;
   selectedTable: string | null;
-  isGovernmentMode: boolean;
+  isClassicMode: boolean;
 }
 
 export interface SchemaData {

@@ -11,148 +11,151 @@ describe("useSchemaStore - parseSchemaData", () => {
     store = useSchemaStore();
   });
 
-  const sampleSchemaText = `database,public,lut_provinces,id,1,uuid,,PRIMARY KEY,,,
-database,public,lut_provinces,name,2,varchar,255,NOT NULL,,,
-database,public,lut_provinces,code,3,varchar,10,UNIQUE,,,
-database,public,lut_provinces,created_at,4,timestamp,,DEFAULT NOW(),,,
-database,public,users,id,1,uuid,,PRIMARY KEY,,,
-database,public,users,name,2,varchar,255,NOT NULL,,,
-database,public,users,email,3,varchar,255,UNIQUE,,,
-database,public,users,province_id,4,uuid,,FOREIGN KEY,lut_provinces,id,
-database,public,posts,id,1,uuid,,PRIMARY KEY,,,
-database,public,posts,title,2,varchar,500,NOT NULL,,,
-database,public,posts,content,3,text,,,,,
-database,public,posts,user_id,4,uuid,,FOREIGN KEY,users,id,
-database,public,posts,created_at,5,timestamp,,DEFAULT NOW(),,,`;
+  const sampleSchemaText = `dbms,table_catalog,table_schema,table_name,column_name,ordinal_position,data_type,character_maximum_length,constraint_type,foreign_table_schema,foreign_table_name,foreign_column_name,relationship_hint
+postgresql,database,public,lut_provinces,id,1,uuid,,PRIMARY KEY,,,,
+postgresql,database,public,lut_provinces,name,2,varchar,255,NOT NULL,,,,
+postgresql,database,public,lut_provinces,code,3,varchar,10,UNIQUE,,,,
+postgresql,database,public,lut_provinces,created_at,4,timestamp,,DEFAULT NOW(),,,,
+postgresql,database,public,users,id,1,uuid,,PRIMARY KEY,,,,
+postgresql,database,public,users,name,2,varchar,255,NOT NULL,,,,
+postgresql,database,public,users,email,3,varchar,255,UNIQUE,,,,
+postgresql,database,public,users,province_id,4,uuid,,FOREIGN KEY,public,lut_provinces,id,
+postgresql,database,public,posts,id,1,uuid,,PRIMARY KEY,,,,
+postgresql,database,public,posts,title,2,varchar,500,NOT NULL,,,,
+postgresql,database,public,posts,content,3,text,,,,,
+postgresql,database,public,posts,user_id,4,uuid,,FOREIGN KEY,public,users,id,
+postgresql,database,public,posts,created_at,5,timestamp,,DEFAULT NOW(),,,,`;
 
   // More realistic e-commerce example
-  const ecommerceSchemaText = `ecommerce,public,categories,id,1,uuid,,PRIMARY KEY,,,
-ecommerce,public,categories,name,2,varchar,100,NOT NULL,,,
-ecommerce,public,categories,slug,3,varchar,100,UNIQUE,,,
-ecommerce,public,categories,parent_id,4,uuid,,FOREIGN KEY,categories,id,
-ecommerce,public,categories,description,5,text,,,,,
-ecommerce,public,categories,is_active,6,boolean,,DEFAULT TRUE,,,
-ecommerce,public,categories,created_at,7,timestamp,,DEFAULT NOW(),,,
-ecommerce,public,categories,updated_at,8,timestamp,,DEFAULT NOW(),,,
-ecommerce,public,products,id,1,uuid,,PRIMARY KEY,,,
-ecommerce,public,products,sku,2,varchar,50,UNIQUE NOT NULL,,,
-ecommerce,public,products,name,3,varchar,255,NOT NULL,,,
-ecommerce,public,products,description,4,text,,,,,
-ecommerce,public,products,category_id,5,uuid,,FOREIGN KEY,categories,id,
-ecommerce,public,products,price,6,decimal,10.2,NOT NULL,,,
-ecommerce,public,products,compare_price,7,decimal,10.2,,,,
-ecommerce,public,products,cost_price,8,decimal,10.2,,,,
-ecommerce,public,products,track_inventory,9,boolean,,DEFAULT TRUE,,,
-ecommerce,public,products,inventory_quantity,10,integer,,DEFAULT 0,,,
-ecommerce,public,products,weight,11,decimal,8.2,,,,
-ecommerce,public,products,is_active,12,boolean,,DEFAULT TRUE,,,
-ecommerce,public,products,meta_title,13,varchar,255,,,,,
-ecommerce,public,products,meta_description,14,varchar,500,,,,,
-ecommerce,public,products,created_at,15,timestamp,,DEFAULT NOW(),,,
-ecommerce,public,products,updated_at,16,timestamp,,DEFAULT NOW(),,,
-ecommerce,public,customers,id,1,uuid,,PRIMARY KEY,,,
-ecommerce,public,customers,email,2,varchar,255,UNIQUE NOT NULL,,,
-ecommerce,public,customers,first_name,3,varchar,100,NOT NULL,,,
-ecommerce,public,customers,last_name,4,varchar,100,NOT NULL,,,
-ecommerce,public,customers,phone,5,varchar,20,,,,,
-ecommerce,public,customers,date_of_birth,6,date,,,,,
-ecommerce,public,customers,password_hash,7,varchar,255,NOT NULL,,,
-ecommerce,public,customers,email_verified_at,8,timestamp,,,,,
-ecommerce,public,customers,is_active,9,boolean,,DEFAULT TRUE,,,
-ecommerce,public,customers,created_at,10,timestamp,,DEFAULT NOW(),,,
-ecommerce,public,customers,updated_at,11,timestamp,,DEFAULT NOW(),,,
-ecommerce,public,customer_addresses,id,1,uuid,,PRIMARY KEY,,,
-ecommerce,public,customer_addresses,customer_id,2,uuid,,FOREIGN KEY,customers,id,
-ecommerce,public,customer_addresses,type,3,varchar,20,NOT NULL,,,
-ecommerce,public,customer_addresses,first_name,4,varchar,100,NOT NULL,,,
-ecommerce,public,customer_addresses,last_name,5,varchar,100,NOT NULL,,,
-ecommerce,public,customer_addresses,company,6,varchar,255,,,,,
-ecommerce,public,customer_addresses,address_line_1,7,varchar,255,NOT NULL,,,
-ecommerce,public,customer_addresses,address_line_2,8,varchar,255,,,,,
-ecommerce,public,customer_addresses,city,9,varchar,100,NOT NULL,,,
-ecommerce,public,customer_addresses,state,10,varchar,100,,,,,
-ecommerce,public,customer_addresses,postal_code,11,varchar,20,,,,,
-ecommerce,public,customer_addresses,country,12,varchar,100,NOT NULL,,,
-ecommerce,public,customer_addresses,phone,13,varchar,20,,,,,
-ecommerce,public,customer_addresses,is_default,14,boolean,,DEFAULT FALSE,,,
-ecommerce,public,customer_addresses,created_at,15,timestamp,,DEFAULT NOW(),,,
-ecommerce,public,orders,id,1,uuid,,PRIMARY KEY,,,
-ecommerce,public,orders,order_number,2,varchar,50,UNIQUE NOT NULL,,,
-ecommerce,public,orders,customer_id,3,uuid,,FOREIGN KEY,customers,id,
-ecommerce,public,orders,status,4,varchar,20,NOT NULL,,,
-ecommerce,public,orders,subtotal,5,decimal,10.2,NOT NULL,,,
-ecommerce,public,orders,tax_amount,6,decimal,10.2,,DEFAULT 0,,,
-ecommerce,public,orders,shipping_amount,7,decimal,10.2,,DEFAULT 0,,,
-ecommerce,public,orders,discount_amount,8,decimal,10.2,,DEFAULT 0,,,
-ecommerce,public,orders,total_amount,9,decimal,10.2,NOT NULL,,,
-ecommerce,public,orders,currency,10,varchar,3,,DEFAULT 'USD',,,
-ecommerce,public,orders,payment_status,11,varchar,20,NOT NULL,,,
-ecommerce,public,orders,shipping_address,12,json,,,,,
-ecommerce,public,orders,billing_address,13,json,,,,,
-ecommerce,public,orders,notes,14,text,,,,,
-ecommerce,public,orders,shipped_at,15,timestamp,,,,,
-ecommerce,public,orders,delivered_at,16,timestamp,,,,,
-ecommerce,public,orders,created_at,17,timestamp,,DEFAULT NOW(),,,
-ecommerce,public,orders,updated_at,18,timestamp,,DEFAULT NOW(),,,
-ecommerce,public,order_items,id,1,uuid,,PRIMARY KEY,,,
-ecommerce,public,order_items,order_id,2,uuid,,FOREIGN KEY,orders,id,
-ecommerce,public,order_items,product_id,3,uuid,,FOREIGN KEY,products,id,
-ecommerce,public,order_items,quantity,4,integer,NOT NULL,,,
-ecommerce,public,order_items,unit_price,5,decimal,10.2,NOT NULL,,,
-ecommerce,public,order_items,total_price,6,decimal,10.2,NOT NULL,,,
-ecommerce,public,order_items,product_name,7,varchar,255,NOT NULL,,,
-ecommerce,public,order_items,product_sku,8,varchar,50,NOT NULL,,,
-ecommerce,public,order_items,created_at,9,timestamp,,DEFAULT NOW(),,,`;
+  const ecommerceSchemaText = `dbms,table_catalog,table_schema,table_name,column_name,ordinal_position,data_type,character_maximum_length,constraint_type,foreign_table_schema,foreign_table_name,foreign_column_name,relationship_hint
+postgresql,ecommerce,public,categories,id,1,uuid,,PRIMARY KEY,,,,
+postgresql,ecommerce,public,categories,name,2,varchar,100,NOT NULL,,,,
+postgresql,ecommerce,public,categories,slug,3,varchar,100,UNIQUE,,,,
+postgresql,ecommerce,public,categories,parent_id,4,uuid,,FOREIGN KEY,public,categories,id,
+postgresql,ecommerce,public,categories,description,5,text,,,,,,
+postgresql,ecommerce,public,categories,is_active,6,boolean,,DEFAULT TRUE,,,,
+postgresql,ecommerce,public,categories,created_at,7,timestamp,,DEFAULT NOW(),,,,
+postgresql,ecommerce,public,categories,updated_at,8,timestamp,,DEFAULT NOW(),,,,
+postgresql,ecommerce,public,products,id,1,uuid,,PRIMARY KEY,,,,
+postgresql,ecommerce,public,products,sku,2,varchar,50,UNIQUE NOT NULL,,,,
+postgresql,ecommerce,public,products,name,3,varchar,255,NOT NULL,,,,
+postgresql,ecommerce,public,products,description,4,text,,,,,,
+postgresql,ecommerce,public,products,category_id,5,uuid,,FOREIGN KEY,public,categories,id,
+postgresql,ecommerce,public,products,price,6,decimal,10.2,NOT NULL,,,
+postgresql,ecommerce,public,products,compare_price,7,decimal,10.2,,,,
+postgresql,ecommerce,public,products,cost_price,8,decimal,10.2,,,,
+postgresql,ecommerce,public,products,track_inventory,9,boolean,,DEFAULT TRUE,,,
+postgresql,ecommerce,public,products,inventory_quantity,10,integer,,DEFAULT 0,,,
+postgresql,ecommerce,public,products,weight,11,decimal,8.2,,,,
+postgresql,ecommerce,public,products,is_active,12,boolean,,DEFAULT TRUE,,,
+postgresql,ecommerce,public,products,meta_title,13,varchar,255,,,,,
+postgresql,ecommerce,public,products,meta_description,14,varchar,500,,,,,
+postgresql,ecommerce,public,products,created_at,15,timestamp,,DEFAULT NOW(),,,
+postgresql,ecommerce,public,products,updated_at,16,timestamp,,DEFAULT NOW(),,,
+postgresql,ecommerce,public,customers,id,1,uuid,,PRIMARY KEY,,,
+postgresql,ecommerce,public,customers,email,2,varchar,255,UNIQUE NOT NULL,,,
+postgresql,ecommerce,public,customers,first_name,3,varchar,100,NOT NULL,,,
+postgresql,ecommerce,public,customers,last_name,4,varchar,100,NOT NULL,,,
+postgresql,ecommerce,public,customers,phone,5,varchar,20,,,,,
+postgresql,ecommerce,public,customers,date_of_birth,6,date,,,,,
+postgresql,ecommerce,public,customers,password_hash,7,varchar,255,NOT NULL,,,
+postgresql,ecommerce,public,customers,email_verified_at,8,timestamp,,,,,
+postgresql,ecommerce,public,customers,is_active,9,boolean,,DEFAULT TRUE,,,
+postgresql,ecommerce,public,customers,created_at,10,timestamp,,DEFAULT NOW(),,,
+postgresql,ecommerce,public,customers,updated_at,11,timestamp,,DEFAULT NOW(),,,
+postgresql,ecommerce,public,customer_addresses,id,1,uuid,,PRIMARY KEY,,,
+postgresql,ecommerce,public,customer_addresses,customer_id,2,uuid,,FOREIGN KEY,public,customers,id
+postgresql,ecommerce,public,customer_addresses,type,3,varchar,20,NOT NULL,,,
+postgresql,ecommerce,public,customer_addresses,first_name,4,varchar,100,NOT NULL,,,
+postgresql,ecommerce,public,customer_addresses,last_name,5,varchar,100,NOT NULL,,,
+postgresql,ecommerce,public,customer_addresses,company,6,varchar,255,,,,,
+postgresql,ecommerce,public,customer_addresses,address_line_1,7,varchar,255,NOT NULL,,,
+postgresql,ecommerce,public,customer_addresses,address_line_2,8,varchar,255,,,,,
+postgresql,ecommerce,public,customer_addresses,city,9,varchar,100,NOT NULL,,,
+postgresql,ecommerce,public,customer_addresses,state,10,varchar,100,,,,,
+postgresql,ecommerce,public,customer_addresses,postal_code,11,varchar,20,,,,,
+postgresql,ecommerce,public,customer_addresses,country,12,varchar,100,NOT NULL,,,
+postgresql,ecommerce,public,customer_addresses,phone,13,varchar,20,,,,,
+postgresql,ecommerce,public,customer_addresses,is_default,14,boolean,,DEFAULT FALSE,,,
+postgresql,ecommerce,public,customer_addresses,created_at,15,timestamp,,DEFAULT NOW(),,,
+postgresql,ecommerce,public,orders,id,1,uuid,,PRIMARY KEY,,,
+postgresql,ecommerce,public,orders,order_number,2,varchar,50,UNIQUE NOT NULL,,,
+postgresql,ecommerce,public,orders,customer_id,3,uuid,,FOREIGN KEY,public,customers,id
+postgresql,ecommerce,public,orders,status,4,varchar,20,NOT NULL,,,
+postgresql,ecommerce,public,orders,subtotal,5,decimal,10.2,NOT NULL,,,
+postgresql,ecommerce,public,orders,tax_amount,6,decimal,10.2,,DEFAULT 0,,,
+postgresql,ecommerce,public,orders,shipping_amount,7,decimal,10.2,,DEFAULT 0,,,
+postgresql,ecommerce,public,orders,discount_amount,8,decimal,10.2,,DEFAULT 0,,,
+postgresql,ecommerce,public,orders,total_amount,9,decimal,10.2,NOT NULL,,,
+postgresql,ecommerce,public,orders,currency,10,varchar,3,,DEFAULT 'USD',,,
+postgresql,ecommerce,public,orders,payment_status,11,varchar,20,NOT NULL,,,
+postgresql,ecommerce,public,orders,shipping_address,12,json,,,,,
+postgresql,ecommerce,public,orders,billing_address,13,json,,,,,
+postgresql,ecommerce,public,orders,notes,14,text,,,,,
+postgresql,ecommerce,public,orders,shipped_at,15,timestamp,,,,,
+postgresql,ecommerce,public,orders,delivered_at,16,timestamp,,,,,
+postgresql,ecommerce,public,orders,created_at,17,timestamp,,DEFAULT NOW(),,,
+postgresql,ecommerce,public,orders,updated_at,18,timestamp,,DEFAULT NOW(),,,
+postgresql,ecommerce,public,order_items,id,1,uuid,,PRIMARY KEY,,,
+postgresql,ecommerce,public,order_items,order_id,2,uuid,,FOREIGN KEY,public,orders,id
+postgresql,ecommerce,public,order_items,product_id,3,uuid,,FOREIGN KEY,public,products,id
+postgresql,ecommerce,public,order_items,quantity,4,integer,NOT NULL,,,
+postgresql,ecommerce,public,order_items,unit_price,5,decimal,10.2,NOT NULL,,,
+postgresql,ecommerce,public,order_items,total_price,6,decimal,10.2,NOT NULL,,,
+postgresql,ecommerce,public,order_items,product_name,7,varchar,255,NOT NULL,,,
+postgresql,ecommerce,public,order_items,product_sku,8,varchar,50,NOT NULL,,,
+postgresql,ecommerce,public,order_items,created_at,9,timestamp,,DEFAULT NOW(),,,`;
 
   // Complex enterprise example with more tables and relationships
-  const enterpriseSchemaText = `enterprise,public,organizations,id,1,uuid,,PRIMARY KEY,,,
-enterprise,public,organizations,name,2,varchar,255,NOT NULL,,,
-enterprise,public,organizations,slug,3,varchar,100,UNIQUE,,,
-enterprise,public,organizations,domain,4,varchar,255,UNIQUE,,,
-enterprise,public,organizations,subscription_plan,5,varchar,50,NOT NULL,,,
-enterprise,public,organizations,max_users,6,integer,,DEFAULT 10,,,
-enterprise,public,organizations,is_active,7,boolean,,DEFAULT TRUE,,,
-enterprise,public,organizations,created_at,8,timestamp,,DEFAULT NOW(),,,
-enterprise,public,users,id,1,uuid,,PRIMARY KEY,,,
-enterprise,public,users,organization_id,2,uuid,,FOREIGN KEY,organizations,id,
-enterprise,public,users,email,3,varchar,255,UNIQUE NOT NULL,,,
-enterprise,public,users,first_name,4,varchar,100,NOT NULL,,,
-enterprise,public,users,last_name,5,varchar,100,NOT NULL,,,
-enterprise,public,users,role,6,varchar,50,NOT NULL,,,
-enterprise,public,users,is_admin,7,boolean,,DEFAULT FALSE,,,
-enterprise,public,users,last_login_at,8,timestamp,,,,,
-enterprise,public,users,created_at,9,timestamp,,DEFAULT NOW(),,,
-enterprise,public,projects,id,1,uuid,,PRIMARY KEY,,,
-enterprise,public,projects,organization_id,2,uuid,,FOREIGN KEY,organizations,id,
-enterprise,public,projects,name,3,varchar,255,NOT NULL,,,
-enterprise,public,projects,description,4,text,,,,,
-enterprise,public,projects,status,5,varchar,20,NOT NULL,,,
-enterprise,public,projects,start_date,6,date,,,,,
-enterprise,public,projects,end_date,7,date,,,,,
-enterprise,public,projects,budget,8,decimal,12.2,,,,
-enterprise,public,projects,created_by,9,uuid,,FOREIGN KEY,users,id,
-enterprise,public,projects,created_at,10,timestamp,,DEFAULT NOW(),,,
-enterprise,public,tasks,id,1,uuid,,PRIMARY KEY,,,
-enterprise,public,tasks,project_id,2,uuid,,FOREIGN KEY,projects,id,
-enterprise,public,tasks,assigned_to,3,uuid,,FOREIGN KEY,users,id,
-enterprise,public,tasks,title,4,varchar,255,NOT NULL,,,
-enterprise,public,tasks,description,5,text,,,,,
-enterprise,public,tasks,priority,6,varchar,10,,DEFAULT 'medium',,,
-enterprise,public,tasks,status,7,varchar,20,,DEFAULT 'todo',,,
-enterprise,public,tasks,due_date,8,timestamp,,,,,
-enterprise,public,tasks,estimated_hours,9,decimal,5.2,,,,
-enterprise,public,tasks,actual_hours,10,decimal,5.2,,,,
-enterprise,public,tasks,created_by,11,uuid,,FOREIGN KEY,users,id,
-enterprise,public,tasks,created_at,12,timestamp,,DEFAULT NOW(),,,
-enterprise,public,time_entries,id,1,uuid,,PRIMARY KEY,,,
-enterprise,public,time_entries,task_id,2,uuid,,FOREIGN KEY,tasks,id,
-enterprise,public,time_entries,user_id,3,uuid,,FOREIGN KEY,users,id,
-enterprise,public,time_entries,description,4,text,,,,,
-enterprise,public,time_entries,hours,5,decimal,5.2,NOT NULL,,,
-enterprise,public,time_entries,date,6,date,NOT NULL,,,
-enterprise,public,time_entries,is_billable,7,boolean,,DEFAULT TRUE,,,
-enterprise,public,time_entries,hourly_rate,8,decimal,8.2,,,,
-enterprise,public,time_entries,created_at,9,timestamp,,DEFAULT NOW(),,,`;
+  const enterpriseSchemaText = `dbms,table_catalog,table_schema,table_name,column_name,ordinal_position,data_type,character_maximum_length,constraint_type,foreign_table_schema,foreign_table_name,foreign_column_name
+postgresql,enterprise,public,organizations,id,1,uuid,,PRIMARY KEY,,,
+postgresql,enterprise,public,organizations,name,2,varchar,255,NOT NULL,,,
+postgresql,enterprise,public,organizations,slug,3,varchar,100,UNIQUE,,,
+postgresql,enterprise,public,organizations,domain,4,varchar,255,UNIQUE,,,
+postgresql,enterprise,public,organizations,subscription_plan,5,varchar,50,NOT NULL,,,
+postgresql,enterprise,public,organizations,max_users,6,integer,,DEFAULT 10,,,
+postgresql,enterprise,public,organizations,is_active,7,boolean,,DEFAULT TRUE,,,
+postgresql,enterprise,public,organizations,created_at,8,timestamp,,DEFAULT NOW(),,,
+postgresql,enterprise,public,users,id,1,uuid,,PRIMARY KEY,,,
+postgresql,enterprise,public,users,organization_id,2,uuid,,FOREIGN KEY,public,organizations,id
+postgresql,enterprise,public,users,email,3,varchar,255,UNIQUE NOT NULL,,,
+postgresql,enterprise,public,users,first_name,4,varchar,100,NOT NULL,,,
+postgresql,enterprise,public,users,last_name,5,varchar,100,NOT NULL,,,
+postgresql,enterprise,public,users,role,6,varchar,50,NOT NULL,,,
+postgresql,enterprise,public,users,is_admin,7,boolean,,DEFAULT FALSE,,,
+postgresql,enterprise,public,users,last_login_at,8,timestamp,,,,,
+postgresql,enterprise,public,users,created_at,9,timestamp,,DEFAULT NOW(),,,
+postgresql,enterprise,public,projects,id,1,uuid,,PRIMARY KEY,,,
+postgresql,enterprise,public,projects,organization_id,2,uuid,,FOREIGN KEY,public,organizations,id
+postgresql,enterprise,public,projects,name,3,varchar,255,NOT NULL,,,
+postgresql,enterprise,public,projects,description,4,text,,,,,
+postgresql,enterprise,public,projects,status,5,varchar,20,NOT NULL,,,
+postgresql,enterprise,public,projects,start_date,6,date,,,,,
+postgresql,enterprise,public,projects,end_date,7,date,,,,,
+postgresql,enterprise,public,projects,budget,8,decimal,12.2,,,,
+postgresql,enterprise,public,projects,created_by,9,uuid,,FOREIGN KEY,public,users,id
+postgresql,enterprise,public,projects,created_at,10,timestamp,,DEFAULT NOW(),,,
+postgresql,enterprise,public,tasks,id,1,uuid,,PRIMARY KEY,,,
+postgresql,enterprise,public,tasks,project_id,2,uuid,,FOREIGN KEY,public,projects,id
+postgresql,enterprise,public,tasks,assigned_to,3,uuid,,FOREIGN KEY,public,users,id
+postgresql,enterprise,public,tasks,title,4,varchar,255,NOT NULL,,,
+postgresql,enterprise,public,tasks,description,5,text,,,,,
+postgresql,enterprise,public,tasks,priority,6,varchar,10,,DEFAULT 'medium',,,
+postgresql,enterprise,public,tasks,status,7,varchar,20,,DEFAULT 'todo',,,
+postgresql,enterprise,public,tasks,due_date,8,timestamp,,,,,
+postgresql,enterprise,public,tasks,estimated_hours,9,decimal,5.2,,,,
+postgresql,enterprise,public,tasks,actual_hours,10,decimal,5.2,,,,
+postgresql,enterprise,public,tasks,created_by,11,uuid,,FOREIGN KEY,public,users,id
+postgresql,enterprise,public,tasks,created_at,12,timestamp,,DEFAULT NOW(),,,
+postgresql,enterprise,public,time_entries,id,1,uuid,,PRIMARY KEY,,,
+postgresql,enterprise,public,time_entries,task_id,2,uuid,,FOREIGN KEY,public,tasks,id
+postgresql,enterprise,public,time_entries,user_id,3,uuid,,FOREIGN KEY,public,users,id
+postgresql,enterprise,public,time_entries,description,4,text,,,,,
+postgresql,enterprise,public,time_entries,hours,5,decimal,5.2,NOT NULL,,,
+postgresql,enterprise,public,time_entries,date,6,date,NOT NULL,,,
+postgresql,enterprise,public,time_entries,is_billable,7,boolean,,DEFAULT TRUE,,,
+postgresql,enterprise,public,time_entries,hourly_rate,8,decimal,8.2,,,,
+postgresql,enterprise,public,time_entries,created_at,9,timestamp,,DEFAULT NOW(),,,`;
 
   it("should clear existing schema data before parsing", () => {
     // Add some initial data
@@ -343,9 +346,10 @@ enterprise,public,time_entries,created_at,9,timestamp,,DEFAULT NOW(),,,`;
   });
 
   it("should sort columns by position within each table", () => {
-    const unorderedSchema = `database,public,test_table,created_at,3,timestamp,,DEFAULT NOW(),,,
-database,public,test_table,id,1,uuid,,PRIMARY KEY,,,
-database,public,test_table,name,2,varchar,255,NOT NULL,,,`;
+    const unorderedSchema = `dbms,table_catalog,table_schema,table_name,column_name,ordinal_position,data_type,character_maximum_length,constraint_type,foreign_table_schema,foreign_table_name,foreign_column_name,relationship_hint
+postgresql,database,public,test_table,created_at,3,timestamp,,DEFAULT NOW(),,,,
+postgresql,database,public,test_table,id,1,uuid,,PRIMARY KEY,,,,
+postgresql,database,public,test_table,name,2,varchar,255,NOT NULL,,,,`;
 
     store.parseSchemaData(unorderedSchema);
 
@@ -363,8 +367,9 @@ database,public,test_table,name,2,varchar,255,NOT NULL,,,`;
   });
 
   it("should filter out lines with insufficient data", () => {
-    const incompleteSchema = `database,public,incomplete
-database,public,valid_table,id,1,uuid,,PRIMARY KEY,,,
+    const incompleteSchema = `dbms,table_catalog,table_schema,table_name,column_name,ordinal_position,data_type,character_maximum_length,constraint_type,foreign_table_schema,foreign_table_name,foreign_column_name,relationship_hint
+postgresql,database,public,incomplete,with,few,parts,only
+postgresql,database,public,valid_table,id,1,uuid,,PRIMARY KEY,,,,
 invalid,line,with,few,parts`;
 
     store.parseSchemaData(incompleteSchema);
@@ -375,10 +380,11 @@ invalid,line,with,few,parts`;
   });
 
   it("should handle mixed case constraints correctly", () => {
-    const mixedCaseSchema = `database,public,test_table,col1,1,uuid,,primary key,,,
-database,public,test_table,col2,2,varchar,50,FOREIGN KEY,other,id,
-database,public,test_table,col3,3,varchar,50,Unique,,,
-database,public,test_table,col4,4,varchar,50,not null,,,`;
+    const mixedCaseSchema = `dbms,table_catalog,table_schema,table_name,column_name,ordinal_position,data_type,character_maximum_length,constraint_type,foreign_table_schema,foreign_table_name,foreign_column_name,relationship_hint
+postgresql,database,public,test_table,col1,1,uuid,,primary key,,,,
+postgresql,database,public,test_table,col2,2,varchar,50,FOREIGN KEY,public,other,id,
+postgresql,database,public,test_table,col3,3,varchar,50,Unique,,,,
+postgresql,database,public,test_table,col4,4,varchar,50,not null,,,,`;
 
     store.parseSchemaData(mixedCaseSchema);
 
@@ -396,7 +402,8 @@ database,public,test_table,col4,4,varchar,50,not null,,,`;
   });
 
   it("should handle multiple constraints on a single column", () => {
-    const multiConstraintSchema = `database,public,test_table,combo_col,1,varchar,200,UNIQUE NOT NULL,,,`;
+    const multiConstraintSchema = `dbms,table_catalog,table_schema,table_name,column_name,ordinal_position,data_type,character_maximum_length,constraint_type,foreign_table_schema,foreign_table_name,foreign_column_name,relationship_hint
+postgresql,database,public,test_table,combo_col,1,varchar,200,UNIQUE NOT NULL,,,,`;
 
     store.parseSchemaData(multiConstraintSchema);
 
@@ -448,8 +455,9 @@ database,public,test_table,col4,4,varchar,50,not null,,,`;
   });
 
   it("should skip relationships for rows without foreign key data", () => {
-    const schemaWithoutForeignKeys = `database,public,simple_table,id,1,uuid,,PRIMARY KEY,,,
-database,public,simple_table,name,2,varchar,255,NOT NULL,,,`;
+    const schemaWithoutForeignKeys = `dbms,table_catalog,table_schema,table_name,column_name,ordinal_position,data_type,character_maximum_length,constraint_type,foreign_table_schema,foreign_table_name,foreign_column_name,relationship_hint
+postgresql,database,public,simple_table,id,1,uuid,,PRIMARY KEY,,,,
+postgresql,database,public,simple_table,name,2,varchar,255,NOT NULL,,,,`;
 
     store.parseSchemaData(schemaWithoutForeignKeys);
 
@@ -473,5 +481,98 @@ database,public,simple_table,name,2,varchar,255,NOT NULL,,,`;
     tableIds.forEach((id) => {
       expect(id).toMatch(/^\d+-\d+\.?\d*$/);
     });
+  });
+
+  it("should use explicit relationship hints from CSV", () => {
+    const schemaWithHints = `dbms,table_catalog,table_schema,table_name,column_name,ordinal_position,data_type,character_maximum_length,constraint_type,foreign_table_schema,foreign_table_name,foreign_column_name,relationship_hint
+postgresql,database,public,users,id,1,uuid,,PRIMARY KEY,,,,
+postgresql,database,public,profiles,user_id,1,uuid,,FOREIGN KEY,public,users,id,one-to-one
+postgresql,database,public,posts,id,1,uuid,,PRIMARY KEY,,,,
+postgresql,database,public,posts,author_id,2,uuid,,FOREIGN KEY,public,users,id,one-to-many
+postgresql,database,public,tags,id,1,uuid,,PRIMARY KEY,,,,
+postgresql,database,public,post_tags,post_id,1,uuid,,FOREIGN KEY,public,posts,id,many-to-many
+postgresql,database,public,post_tags,tag_id,2,uuid,,FOREIGN KEY,public,tags,id,many-to-many`;
+
+    store.parseSchemaData(schemaWithHints);
+
+    // Check that explicit hints are used
+    const oneToOneRel = store.relationships.find(
+      (r) => r.fromTable === "profiles" && r.fromColumn === "user_id"
+    );
+    expect(oneToOneRel?.cardinality).toBe("one-to-one");
+
+    const oneToManyRel = store.relationships.find(
+      (r) => r.fromTable === "posts" && r.fromColumn === "author_id"
+    );
+    expect(oneToManyRel?.cardinality).toBe("one-to-many");
+
+    const manyToManyRels = store.relationships.filter(
+      (r) => r.cardinality === "many-to-many"
+    );
+    expect(manyToManyRels).toHaveLength(2);
+  });
+
+  it("should detect composite junction tables for many-to-many relationships", () => {
+    const junctionTableSchema = `dbms,table_catalog,table_schema,table_name,column_name,ordinal_position,data_type,character_maximum_length,constraint_type,foreign_table_schema,foreign_table_name,foreign_column_name,relationship_hint
+postgresql,database,public,students,id,1,uuid,,PRIMARY KEY,,,,
+postgresql,database,public,courses,id,1,uuid,,PRIMARY KEY,,,,
+postgresql,database,public,student_courses,student_id,1,uuid,,PRIMARY KEY FOREIGN KEY,public,students,id,
+postgresql,database,public,student_courses,course_id,2,uuid,,PRIMARY KEY FOREIGN KEY,public,courses,id,`;
+
+    store.parseSchemaData(junctionTableSchema);
+
+    // Both relationships should be detected as many-to-many
+    const relationships = store.relationships;
+    expect(relationships).toHaveLength(2);
+    
+    relationships.forEach((rel) => {
+      expect(rel.cardinality).toBe("many-to-many");
+    });
+  });
+
+  it("should detect one-to-one relationships from unique constraints", () => {
+    const uniqueConstraintSchema = `dbms,table_catalog,table_schema,table_name,column_name,ordinal_position,data_type,character_maximum_length,constraint_type,foreign_table_schema,foreign_table_name,foreign_column_name,relationship_hint
+postgresql,database,public,users,id,1,uuid,,PRIMARY KEY,,,,
+postgresql,database,public,profiles,user_id,1,uuid,,UNIQUE FOREIGN KEY,public,users,id,`;
+
+    store.parseSchemaData(uniqueConstraintSchema);
+
+    const relationship = store.relationships[0];
+    expect(relationship.cardinality).toBe("one-to-one");
+  });
+
+  it("should default to many-to-one for foreign keys without hints", () => {
+    const defaultSchema = `dbms,table_catalog,table_schema,table_name,column_name,ordinal_position,data_type,character_maximum_length,constraint_type,foreign_table_schema,foreign_table_name,foreign_column_name,relationship_hint
+postgresql,database,public,users,id,1,uuid,,PRIMARY KEY,,,,
+postgresql,database,public,posts,user_id,1,uuid,,FOREIGN KEY,public,users,id,`;
+
+    store.parseSchemaData(defaultSchema);
+
+    const relationship = store.relationships[0];
+    expect(relationship.cardinality).toBe("many-to-one");
+  });
+
+  it("should handle case-insensitive header filtering", () => {
+    const mixedCaseHeader = `DBMS,Table_Catalog,Table_Schema,Table_Name,Column_Name,Ordinal_Position,Data_Type,Character_Maximum_Length,Constraint_Type,Foreign_Table_Schema,Foreign_Table_Name,Foreign_Column_Name,Relationship_Hint
+postgresql,database,public,test_table,id,1,uuid,,PRIMARY KEY,,,,
+postgresql,database,public,test_table,name,2,varchar,255,NOT NULL,,,,`;
+
+    store.parseSchemaData(mixedCaseHeader);
+
+    expect(store.tables).toHaveLength(1);
+    expect(store.tables[0].name).toBe("test_table");
+    expect(store.tables[0].columns).toHaveLength(2);
+  });
+
+  it("should handle empty relationship hints gracefully", () => {
+    const emptyHintsSchema = `dbms,table_catalog,table_schema,table_name,column_name,ordinal_position,data_type,character_maximum_length,constraint_type,foreign_table_schema,foreign_table_name,foreign_column_name,relationship_hint
+postgresql,database,public,users,id,1,uuid,,PRIMARY KEY,,,,
+postgresql,database,public,posts,user_id,1,uuid,,FOREIGN KEY,public,users,id,`;
+
+    store.parseSchemaData(emptyHintsSchema);
+
+    // Should use default logic when hint is empty
+    const relationship = store.relationships[0];
+    expect(relationship.cardinality).toBe("many-to-one");
   });
 });

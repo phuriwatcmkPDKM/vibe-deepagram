@@ -41,6 +41,7 @@ export interface CanvasState {
 
 export interface SchemaData {
   database: string;
+  catalog: string;
   schema: string;
   table: string;
   column: string;
@@ -48,8 +49,10 @@ export interface SchemaData {
   datatype: string;
   length: string;
   constraints: string;
+  foreignSchema: string | null;
   foreignTable: string | null;
   foreignColumn: string | null;
+  relationshipHint?: string | null;
 }
 
 export interface DragMoveEvent {

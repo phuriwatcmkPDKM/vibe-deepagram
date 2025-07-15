@@ -152,20 +152,29 @@ export const useSchemaStore = defineStore("schema", () => {
     const schemaData: SchemaData[] = [];
     const lines = schemaText.split("\n").filter((line) => line.trim());
 
-    lines.forEach((line) => {
+    // Remove header
+    const dataLines = lines.filter(
+      (line) => !line.toLowerCase().startsWith("dbms,")
+    );
+
+    dataLines.forEach((line) => {
       const parts = line.split(",");
-      if (parts.length >= 8) {
+
+      if (parts.length >= 12) {
         schemaData.push({
           database: parts[0],
-          schema: parts[1],
-          table: parts[2],
-          column: parts[3],
-          position: parseInt(parts[4]),
-          datatype: parts[5],
-          length: parts[6],
-          constraints: parts[7],
-          foreignTable: parts[8] || null,
-          foreignColumn: parts[9] || null,
+          catalog: parts[1],
+          schema: parts[2],
+          table: parts[3],
+          column: parts[4],
+          position: parseInt(parts[5]),
+          datatype: parts[6],
+          length: parts[7],
+          constraints: parts[8],
+          foreignSchema: parts[9] || null,
+          foreignTable: parts[10] || null,
+          foreignColumn: parts[11] || null,
+          relationshipHint: parts[12] || null,
         });
       }
     });
@@ -205,46 +214,50 @@ export const useSchemaStore = defineStore("schema", () => {
       addTable(tableName, columns, x, y);
     });
 
-    // Add relationships with explicit cardinalities
+    // Add relationships
     const processedRelationships = new Set<string>();
 
     schemaData.forEach((row) => {
       if (row.foreignTable && row.foreignColumn) {
         const relationshipKey = `${row.table}-${row.column}-${row.foreignTable}-${row.foreignColumn}`;
-
-        if (processedRelationships.has(relationshipKey)) {
-          return; // Skip duplicates
-        }
+        if (processedRelationships.has(relationshipKey)) return;
         processedRelationships.add(relationshipKey);
 
         let cardinality:
           | "one-to-one"
           | "one-to-many"
           | "many-to-one"
-          | "many-to-many" = "one-to-many";
+          | "many-to-many" = "many-to-one"; // Default: FK → PK
 
-        // Check if this is a junction table (has multiple foreign keys)
-        const tableForeignKeys = schemaData.filter(
-          (s) =>
-            s.table === row.table && s.foreignTable && s.foreignTable.trim()
-        );
-
-        if (tableForeignKeys.length >= 2) {
-          // Junction table with multiple foreign keys = many-to-many
-          cardinality = "many-to-many";
-        } else if (
-          row.constraints.toLowerCase().includes("unique") ||
-          row.constraints.toLowerCase().includes("primary key")
-        ) {
-          // Unique or primary key constraint = one-to-one
-          cardinality = "one-to-one";
+        // Override from CSV column if available
+        if (row.relationshipHint) {
+          cardinality =
+            row.relationshipHint.toLowerCase() as typeof cardinality;
         } else {
-          // Default = one-to-many
-          cardinality = "one-to-many";
+          // Count all FKs in the same table
+          const foreignKeysInTable = schemaData.filter(
+            (s) => s.table === row.table && s.foreignTable
+          );
+
+          const isUniqueOrPrimary =
+            row.constraints.toLowerCase().includes("primary key") ||
+            row.constraints.toLowerCase().includes("unique");
+
+          const isCompositeJunction =
+            foreignKeysInTable.length === 2 &&
+            foreignKeysInTable.every((fk) =>
+              fk.constraints.toLowerCase().includes("primary key")
+            );
+
+          if (isCompositeJunction) {
+            cardinality = "many-to-many";
+          } else if (isUniqueOrPrimary) {
+            cardinality = "one-to-one";
+          }
         }
 
         console.log(
-          `Adding relationship: ${row.table}.${row.column} -> ${row.foreignTable}.${row.foreignColumn} (${cardinality})`
+          `Adding relationship: ${row.table}.${row.column} → ${row.foreignTable}.${row.foreignColumn} (${cardinality})`
         );
 
         addRelationship(
@@ -259,36 +272,48 @@ export const useSchemaStore = defineStore("schema", () => {
   };
 
   const getSampleData = (): string => {
-    return `database,public,users,id,1,uuid,,PRIMARY KEY,,,
-database,public,users,email,2,varchar,255,UNIQUE NOT NULL,,,
-database,public,users,name,3,varchar,255,NOT NULL,,,
-database,public,users,manager_id,4,uuid,,FOREIGN KEY,users,id,
-database,public,user_profiles,user_id,1,uuid,,PRIMARY KEY FOREIGN KEY,users,id,
-database,public,user_profiles,bio,2,text,,,,,
-database,public,user_profiles,avatar_url,3,varchar,500,,,,
-database,public,companies,id,1,uuid,,PRIMARY KEY,,,
-database,public,companies,name,2,varchar,255,NOT NULL,,,
-database,public,companies,ceo_user_id,3,uuid,,UNIQUE FOREIGN KEY,users,id,
-database,public,departments,id,1,uuid,,PRIMARY KEY,,,
-database,public,departments,name,2,varchar,255,NOT NULL,,,
-database,public,departments,company_id,3,uuid,,NOT NULL FOREIGN KEY,companies,id,
-database,public,employees,id,1,uuid,,PRIMARY KEY,,,
-database,public,employees,name,2,varchar,255,NOT NULL,,,
-database,public,employees,department_id,3,uuid,,NOT NULL FOREIGN KEY,departments,id,
-database,public,employees,supervisor_id,4,uuid,,FOREIGN KEY,employees,id,
-database,public,projects,id,1,uuid,,PRIMARY KEY,,,
-database,public,projects,name,2,varchar,255,NOT NULL,,,
-database,public,projects,description,3,text,,,,,
-database,public,project_assignments,id,1,uuid,,PRIMARY KEY,,,
-database,public,project_assignments,employee_id,2,uuid,,NOT NULL FOREIGN KEY,employees,id,
-database,public,project_assignments,project_id,3,uuid,,NOT NULL FOREIGN KEY,projects,id,
-database,public,project_assignments,role,4,varchar,100,,,,
-database,public,skills,id,1,uuid,,PRIMARY KEY,,,
-database,public,skills,name,2,varchar,255,NOT NULL,,,
-database,public,employee_skills,id,1,uuid,,PRIMARY KEY,,,
-database,public,employee_skills,employee_id,2,uuid,,NOT NULL FOREIGN KEY,employees,id,
-database,public,employee_skills,skill_id,3,uuid,,NOT NULL FOREIGN KEY,skills,id,
-database,public,employee_skills,proficiency,4,varchar,50,,,,`;
+    return `dbms,table_catalog,table_schema,table_name,column_name,ordinal_position,data_type,character_maximum_length,constraint_type,foreign_table_schema,foreign_table_name,foreign_column_name
+postgresql,database,public,users,id,1,uuid,,PRIMARY KEY,,,
+postgresql,database,public,users,name,2,varchar,255,,,,
+postgresql,database,public,users,username,3,varchar,255,,,,
+postgresql,database,public,users,password,4,varchar,255,,,,
+postgresql,database,public,users,age,5,numeric,,,,
+postgresql,database,public,users,user_type_id,6,uuid,,FOREIGN KEY,public,user_types,id
+postgresql,database,public,users,created_at,7,timestamp,,,,
+postgresql,database,public,users,updated_at,8,timestamp,,,,
+postgresql,database,public,users,deleted_at,9,timestamp,,,,
+
+postgresql,database,public,user_types,id,1,uuid,,PRIMARY KEY,,,
+postgresql,database,public,user_types,code,2,varchar,100,,,,
+postgresql,database,public,user_types,name,3,varchar,255,,,,
+postgresql,database,public,user_types,created_at,4,timestamp,,,,
+postgresql,database,public,user_types,updated_at,5,timestamp,,,,
+postgresql,database,public,user_types,deleted_at,6,timestamp,,,,
+
+postgresql,database,public,posts,id,1,uuid,,PRIMARY KEY,,,
+postgresql,database,public,posts,user_id,2,uuid,,FOREIGN KEY,public,users,id
+postgresql,database,public,posts,title,3,varchar,255,,,,
+postgresql,database,public,posts,content,4,text,,,,
+postgresql,database,public,posts,is_published,5,boolean,,,,
+postgresql,database,public,posts,created_at,6,timestamp,,,,
+postgresql,database,public,posts,updated_at,7,timestamp,,,,
+
+postgresql,database,public,comments,id,1,uuid,,PRIMARY KEY,,,
+postgresql,database,public,comments,post_id,2,uuid,,FOREIGN KEY,public,posts,id
+postgresql,database,public,comments,user_id,3,uuid,,FOREIGN KEY,public,users,id
+postgresql,database,public,comments,content,4,text,,,,
+postgresql,database,public,comments,created_at,5,timestamp,,,,
+postgresql,database,public,comments,updated_at,6,timestamp,,,,
+
+postgresql,database,public,categories,id,1,uuid,,PRIMARY KEY,,,
+postgresql,database,public,categories,name,2,varchar,255,,,,
+postgresql,database,public,categories,slug,3,varchar,255,,,,
+postgresql,database,public,categories,created_at,4,timestamp,,,,
+postgresql,database,public,categories,updated_at,5,timestamp,,,,
+
+postgresql,database,public,post_categories,post_id,1,uuid,,FOREIGN KEY,public,posts,id
+postgresql,database,public,post_categories,category_id,2,uuid,,FOREIGN KEY,public,categories,id
+`;
   };
 
   const deleteTable = (tableId: string): void => {

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { ROW_HEIGHT } from "~/constants";
 import type { Table, DragMoveEvent } from "~/types/schema";
 
 interface Props {
@@ -18,75 +19,136 @@ const props = withDefaults(defineProps<Props>(), {
 
 const emit = defineEmits<Emits>();
 
-const { pressed: isPressed } = useMousePressed();
-const { x: mouseX, y: mouseY } = useMouse();
+const schemaStore = useSchemaStore();
+const { canvas } = storeToRefs(schemaStore);
 
-let dragOffset = { x: 0, y: 0 };
-let isDragging = false;
+// Computed height based on columns
+const calculatedHeight = computed(() => {
+  const headerHeight = 40; // Table header height
+  const rowHeight = ROW_HEIGHT; // Each column row height
+  return headerHeight + props.table.columns.length * rowHeight;
+});
+
+// Dragging state
+const isDragging = ref(false);
+const dragStartPos = ref({ x: 0, y: 0 });
+const initialTablePos = ref({ x: 0, y: 0 });
 
 const startDrag = (event: MouseEvent): void => {
-  const rect = (event.currentTarget as HTMLElement).getBoundingClientRect();
-  dragOffset = {
-    x: event.clientX - rect.left,
-    y: event.clientY - rect.top,
-  };
-  isDragging = true;
+  console.log("Table drag started", props.table.id);
+  event.preventDefault();
+  event.stopPropagation();
+
+  isDragging.value = true;
+  dragStartPos.value = { x: event.clientX, y: event.clientY };
+  initialTablePos.value = { x: props.table.x, y: props.table.y };
+
   emit("dragStart", props.table.id);
+
+  // Add global event listeners
+  document.addEventListener("mousemove", onMouseMove);
+  document.addEventListener("mouseup", onMouseUp);
 };
 
-watch([mouseX, mouseY, isPressed], ([newX, newY, pressed]) => {
-  if (!pressed) {
-    if (isDragging) {
-      isDragging = false;
-      emit("dragEnd");
-    }
-    return;
-  }
+const onMouseMove = (event: MouseEvent) => {
+  if (!isDragging.value) return;
 
-  if (isDragging) {
-    const canvasRect = document
-      .querySelector(".schema-canvas")
-      ?.getBoundingClientRect();
-    if (canvasRect) {
-      const newTableX = newX - canvasRect.left - dragOffset.x;
-      const newTableY = newY - canvasRect.top - dragOffset.y;
+  console.log("Mouse move during drag");
+  event.preventDefault();
 
-      emit("dragMove", {
-        tableId: props.table.id,
-        x: newTableX,
-        y: newTableY,
-      });
-    }
-  }
-});
+  // Get current canvas state
+  const schemaStore = useSchemaStore();
+  const canvas = schemaStore.canvas;
+
+  // Calculate movement delta
+  const deltaX = event.clientX - dragStartPos.value.x;
+  const deltaY = event.clientY - dragStartPos.value.y;
+
+  // Scale delta by canvas zoom
+  const scaledDeltaX = deltaX / canvas.scale;
+  const scaledDeltaY = deltaY / canvas.scale;
+
+  // Calculate new position
+  const newX = initialTablePos.value.x + scaledDeltaX;
+  const newY = initialTablePos.value.y + scaledDeltaY;
+
+  console.log("Emitting dragMove", {
+    tableId: props.table.id,
+    x: newX,
+    y: newY,
+  });
+
+  emit("dragMove", {
+    tableId: props.table.id,
+    x: newX,
+    y: newY,
+  });
+};
+
+const onMouseUp = () => {
+  if (!isDragging.value) return;
+
+  console.log("Table drag ended");
+  isDragging.value = false;
+  emit("dragEnd");
+
+  // Remove global event listeners
+  document.removeEventListener("mousemove", onMouseMove);
+  document.removeEventListener("mouseup", onMouseUp);
+};
 </script>
 
 <template>
   <div
     :style="{
-      transform: `translate(${table.x}px, ${table.y}px)`,
       width: `${table.width}px`,
+      height: `${calculatedHeight}px`,
     }"
-    class="absolute bg-white border-2 border-gray-200 rounded-lg shadow-lg hover:shadow-xl transition-shadow cursor-move select-none z-10"
-    :class="{ 'border-primary/60 shadow-primary-100': isSelected }"
+    class="w-full h-full rounded-lg shadow-lg hover:shadow-xl transition-shadow cursor-move select-none"
+    :class="{
+      'border-primary/60 shadow-primary-100 overflow-hidden': isSelected,
+      'bg-white border-2 border-gray-200': !canvas.isClassicMode,
+      'bg-white border-2 border-black': canvas.isClassicMode,
+    }"
     @mousedown="startDrag"
   >
     <!-- Table Header -->
     <div
-      class="bg-gradient-to-r from-purple-500 to-indigo-600 text-white px-4 py-3 rounded-t-md"
+      class="px-4 py-3 rounded-t-md"
+      :class="{
+        'bg-gradient-to-r from-purple-500 to-indigo-600 text-white':
+          !canvas.isClassicMode,
+        'bg-white text-black border-b border-black': canvas.isClassicMode,
+      }"
     >
       <div class="flex items-center gap-2">
-        <div class="w-3 h-3 bg-white/20 rounded-sm" />
+        <div
+          class="w-3 h-3 rounded-sm"
+          :class="{
+            'bg-white/20': !canvas.isClassicMode,
+            'bg-black/20': canvas.isClassicMode,
+          }"
+        />
         <h3 class="font-semibold text-sm">{{ table.name }}</h3>
       </div>
     </div>
 
     <!-- Columns -->
-    <div class="divide-y divide-gray-100">
+    <div
+      class="divide-y"
+      :class="{
+        'divide-gray-100': !canvas.isClassicMode,
+        'divide-black': canvas.isClassicMode,
+      }"
+    >
       <div
         v-for="(column, index) in table.columns"
         :key="index"
-        class="px-4 py-2.5 hover:bg-gray-50 transition-colors"
+        class="px-4 py-2.5 transition-colors"
+        :class="{
+          'hover:bg-gray-50': !canvas.isClassicMode,
+          'hover:bg-gray-100': canvas.isClassicMode,
+        }"
       >
         <div class="flex items-center justify-between">
           <div class="flex items-center gap-2">
@@ -106,12 +168,23 @@ watch([mouseX, mouseY, isPressed], ([newX, newY, pressed]) => {
               </span>
             </div>
 
-            <span class="text-sm font-medium text-gray-900">{{
-              column.name
-            }}</span>
+            <span
+              class="text-sm font-medium"
+              :class="{
+                'text-gray-900': !canvas.isClassicMode,
+                'text-black': canvas.isClassicMode,
+              }"
+              >{{ column.name }}</span
+            >
           </div>
 
-          <div class="text-xs text-gray-500">
+          <div
+            class="text-xs"
+            :class="{
+              'text-gray-500': !canvas.isClassicMode,
+              'text-gray-600': canvas.isClassicMode,
+            }"
+          >
             {{
               column.length ? `${column.type}(${column.length})` : column.type
             }}
@@ -119,7 +192,7 @@ watch([mouseX, mouseY, isPressed], ([newX, newY, pressed]) => {
         </div>
 
         <!-- Constraints -->
-        <div v-if="column.isUnique || column.isNotNull" class="flex gap-1 mt-1">
+        <!-- <div v-if="column.isUnique || column.isNotNull" class="flex gap-1 mt-1">
           <span
             v-if="column.isUnique"
             class="inline-flex px-1.5 py-0.5 text-xs font-medium text-blue-800 bg-blue-100 rounded"
@@ -132,7 +205,7 @@ watch([mouseX, mouseY, isPressed], ([newX, newY, pressed]) => {
           >
             NOT NULL
           </span>
-        </div>
+        </div> -->
       </div>
     </div>
   </div>

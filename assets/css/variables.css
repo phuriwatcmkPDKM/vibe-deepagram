@@ -1,5 +1,4 @@
-:root {
-  /* CI */
-  --ci-primary: oklch(.34 .0504 229.21)
-  --ci-secondary: oklch(67.17% 0.2205 37.86);
+@theme {
+  --color-ci-primary: oklch(0.7036 0.1994 45.28);
+  --color-ci-secondary: oklch(0.7475 0.1292 248.74);
 }

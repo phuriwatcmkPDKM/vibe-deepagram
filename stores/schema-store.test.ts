@@ -144,11 +144,11 @@ describe("useSchemaStore - Additional Functions", () => {
       const sampleData = store.getSampleData();
 
       expect(typeof sampleData).toBe("string");
-      expect(sampleData).toContain("lut_provinces");
+      expect(sampleData).toContain("users");
       expect(sampleData).toContain("PRIMARY KEY");
       expect(sampleData).toContain("FOREIGN KEY");
 
-      // Should be parseable
+      // Should be parsable
       expect(() => {
         store.parseSchemaData(sampleData);
       }).not.toThrow();
@@ -170,8 +170,8 @@ describe("useSchemaStore - Integration", () => {
     const sampleData = store.getSampleData();
     store.parseSchemaData(sampleData);
 
-    expect(store.tables).toHaveLength(3);
-    expect(store.relationships).toHaveLength(2);
+    expect(store.tables).toHaveLength(9);
+    expect(store.relationships).toHaveLength(10);
 
     // 2. Add a new table
     const newTable = store.addTable("comments", [
@@ -198,8 +198,8 @@ describe("useSchemaStore - Integration", () => {
     ]);
     store.addRelationship("comments", "post_id", "posts", "id");
 
-    expect(store.tables).toHaveLength(4);
-    expect(store.relationships).toHaveLength(3);
+    expect(store.tables).toHaveLength(10);
+    expect(store.relationships).toHaveLength(11);
 
     // 3. Move a table
     store.updateTablePosition(newTable.id, 800, 400);
@@ -209,8 +209,8 @@ describe("useSchemaStore - Integration", () => {
 
     // 4. Delete a table
     store.deleteTable(newTable.id);
-    expect(store.tables).toHaveLength(3);
-    expect(store.relationships).toHaveLength(2); // relationship removed
+    expect(store.tables).toHaveLength(9);
+    expect(store.relationships).toHaveLength(10); // relationship removed
 
     // 5. Clear everything
     store.clearSchema();

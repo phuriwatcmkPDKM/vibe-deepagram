@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ROW_HEIGHT } from "~/constants";
+import { IE_MARKER_MAP, ROW_HEIGHT } from "~/constants";
 import type { Relationship, DragMoveEvent } from "~/types/schema";
 
 const schemaStore = useSchemaStore();
@@ -18,7 +18,6 @@ const lastPanPoint = ref({ x: 0, y: 0 });
 const transform = computed(() => {
   return `translate(${canvas.value.panX}px, ${canvas.value.panY}px) scale(${canvas.value.scale})`;
 });
-
 const gridPattern = computed(() => {
   const size = 20 * canvas.value.scale;
   const x = canvas.value.panX % size;
@@ -30,6 +29,26 @@ const gridPattern = computed(() => {
     y: y < 0 ? y + size : y,
     opacity: canvas.value.scale > 0.5 ? 0.6 : 0.3,
   };
+});
+// Container rect for minimap
+const containerRect = computed(() => {
+  return containerRef.value?.getBoundingClientRect() || null;
+});
+
+const cardinalityFontSize = computed(() =>
+  Math.max(10, 12 / canvas.value.scale)
+);
+const cardinalityStrokeWidth = computed(() =>
+  Math.max(2, 3 / canvas.value.scale)
+);
+// Add computed properties for line styling
+const getLineStrokeWidth = computed(() => (isClassic: boolean) => {
+  return isClassic
+    ? Math.max(2.5, 3 / canvas.value.scale)
+    : Math.max(1, 3 / canvas.value.scale);
+});
+const getLineOpacity = computed(() => (isClassic: boolean) => {
+  return isClassic ? 0.9 : Math.max(0.5, Math.min(1, canvas.value.scale * 2));
 });
 
 // Mouse handlers
@@ -286,39 +305,9 @@ const getIEMarker = (
   side: "from" | "to"
 ): string => {
   const cardinality = relationship.cardinality || "one-to-many";
-
-  // Determine if relationship is mandatory or optional
-  const isFromMandatory = checkIfMandatory(relationship, "from");
-  const isToMandatory = checkIfMandatory(relationship, "to");
-
-  switch (cardinality) {
-    case "one-to-one":
-      if (side === "from") {
-        return isFromMandatory ? "ie-one-only" : "ie-zero-one";
-      } else {
-        return isToMandatory ? "ie-one-only" : "ie-zero-one";
-      }
-    case "one-to-many":
-      if (side === "from") {
-        return isFromMandatory ? "ie-one-only" : "ie-zero-one"; // "one and only one" vs "zero or one"
-      } else {
-        return isToMandatory ? "ie-one-or-more" : "ie-zero-many"; // "one or more" vs "zero or more"
-      }
-    case "many-to-one":
-      if (side === "from") {
-        return isFromMandatory ? "ie-one-or-more" : "ie-zero-many"; // "one or more" vs "zero or more"
-      } else {
-        return isToMandatory ? "ie-one-only" : "ie-zero-one"; // "one and only one" vs "zero or one"
-      }
-    case "many-to-many":
-      if (side === "from") {
-        return isFromMandatory ? "ie-one-or-more" : "ie-zero-many"; // "one or more" vs "zero or more"
-      } else {
-        return isToMandatory ? "ie-one-or-more" : "ie-zero-many"; // "one or more" vs "zero or more"
-      }
-    default:
-      return side === "from" ? "ie-one-only" : "ie-one-or-more";
-  }
+  const isMandatory = checkIfMandatory(relationship, side);
+  const key = `${side}-${isMandatory ? "mandatory" : "optional"}`;
+  return IE_MARKER_MAP[cardinality]?.[key] || "ie-one-only";
 };
 
 // Helper function to determine if relationship side is mandatory
@@ -408,11 +397,6 @@ const getCardinalityPosition = (
     };
   }
 };
-
-// Container rect for minimap
-const containerRect = computed(() => {
-  return containerRef.value?.getBoundingClientRect() || null;
-});
 
 onBeforeUnmount(() => {
   document.removeEventListener("mousemove", onMouseMove);
@@ -846,19 +830,11 @@ onBeforeUnmount(() => {
             :key="relationship.id"
             :d="getRelationshipPath(relationship)"
             :stroke="canvas.isClassicMode ? '#1a1a1a' : '#3b82f6'"
-            :stroke-width="
-              canvas.isClassicMode
-                ? Math.max(2.5, 3 / canvas.scale)
-                : Math.max(1, 3 / canvas.scale)
-            "
+            :stroke-width="getLineStrokeWidth(canvas.isClassicMode)"
             fill="none"
             stroke-linecap="round"
             stroke-linejoin="round"
-            :opacity="
-              canvas.isClassicMode
-                ? 0.9
-                : Math.max(0.5, Math.min(1, canvas.scale * 2))
-            "
+            :opacity="getLineOpacity(canvas.isClassicMode)"
             class="transition-opacity duration-200"
             :marker-start="
               canvas.isClassicMode
@@ -885,11 +861,11 @@ onBeforeUnmount(() => {
                 text-anchor="middle"
                 dominant-baseline="middle"
                 font-family="Arial, sans-serif"
-                :font-size="Math.max(10, 12 / canvas.scale)"
+                :font-size="cardinalityFontSize"
                 font-weight="bold"
                 fill="#3b82f6"
                 stroke="white"
-                :stroke-width="Math.max(2, 3 / canvas.scale)"
+                :stroke-width="cardinalityStrokeWidth"
                 paint-order="stroke fill"
               >
                 {{ getCardinalityLabel(relationship, "from") }}
@@ -902,11 +878,11 @@ onBeforeUnmount(() => {
                 text-anchor="middle"
                 dominant-baseline="middle"
                 font-family="Arial, sans-serif"
-                :font-size="Math.max(10, 12 / canvas.scale)"
+                :font-size="cardinalityFontSize"
                 font-weight="bold"
                 fill="#3b82f6"
                 stroke="white"
-                :stroke-width="Math.max(2, 3 / canvas.scale)"
+                :stroke-width="cardinalityStrokeWidth"
                 paint-order="stroke fill"
               >
                 {{ getCardinalityLabel(relationship, "to") }}

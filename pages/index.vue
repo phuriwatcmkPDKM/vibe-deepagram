@@ -4,6 +4,10 @@ definePageMeta({
   middleware: ["auth"],
 });
 
+const route = useRoute();
+const projectId = route.query.projectId as string;
+const { data, isLoading, error } = useErMigration(projectId);
+
 const schemaStore = useSchemaStore();
 const { tables, relationships, canvas } = storeToRefs(schemaStore);
 
@@ -27,6 +31,9 @@ useHead({
 
 <template>
   <div class="h-screen flex flex-col bg-gray-50">
+    <template v-if="isLoading">Loading..</template>
+
+    <template v-else-if="error || !data">Something went wrong</template>
     <!-- Toolbar -->
     <header class="bg-white border-b border-gray-200 shadow-sm">
       <div class="flex items-center justify-between px-6 py-4">
@@ -311,7 +318,6 @@ useHead({
         </div>
       </div>
     </header>
-
     <!-- Canvas -->
     <main class="flex-1 relative">
       <schema-canvas />

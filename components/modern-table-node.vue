@@ -19,13 +19,11 @@ const props = withDefaults(defineProps<Props>(), {
 
 const emit = defineEmits<Emits>();
 
-const schemaStore = useSchemaStore();
-const { canvas } = storeToRefs(schemaStore);
-
 // Computed height based on columns
 const calculatedHeight = computed(() => {
   const headerHeight = HEADER_HEIGHT; // Table header height
   const rowHeight = ROW_HEIGHT; // Each column row height
+
   return headerHeight + props.table.columns.length * rowHeight;
 });
 
@@ -35,7 +33,6 @@ const dragStartPos = ref({ x: 0, y: 0 });
 const initialTablePos = ref({ x: 0, y: 0 });
 
 const startDrag = (event: MouseEvent): void => {
-  console.log("Table drag started", props.table.id);
   event.preventDefault();
   event.stopPropagation();
 
@@ -45,7 +42,6 @@ const startDrag = (event: MouseEvent): void => {
 
   emit("dragStart", props.table.id);
 
-  // Add global event listeners
   document.addEventListener("mousemove", onMouseMove);
   document.addEventListener("mouseup", onMouseUp);
 };
@@ -53,30 +49,19 @@ const startDrag = (event: MouseEvent): void => {
 const onMouseMove = (event: MouseEvent) => {
   if (!isDragging.value) return;
 
-  console.log("Mouse move during drag");
   event.preventDefault();
 
-  // Get current canvas state
   const schemaStore = useSchemaStore();
   const canvas = schemaStore.canvas;
 
-  // Calculate movement delta
   const deltaX = event.clientX - dragStartPos.value.x;
   const deltaY = event.clientY - dragStartPos.value.y;
 
-  // Scale delta by canvas zoom
   const scaledDeltaX = deltaX / canvas.scale;
   const scaledDeltaY = deltaY / canvas.scale;
 
-  // Calculate new position
   const newX = initialTablePos.value.x + scaledDeltaX;
   const newY = initialTablePos.value.y + scaledDeltaY;
-
-  console.log("Emitting dragMove", {
-    tableId: props.table.id,
-    x: newX,
-    y: newY,
-  });
 
   emit("dragMove", {
     tableId: props.table.id,
@@ -88,11 +73,9 @@ const onMouseMove = (event: MouseEvent) => {
 const onMouseUp = () => {
   if (!isDragging.value) return;
 
-  console.log("Table drag ended");
   isDragging.value = false;
   emit("dragEnd");
 
-  // Remove global event listeners
   document.removeEventListener("mousemove", onMouseMove);
   document.removeEventListener("mouseup", onMouseUp);
 };
@@ -104,51 +87,30 @@ const onMouseUp = () => {
       width: `${table.width}px`,
       height: `${calculatedHeight}px`,
     }"
-    class="w-full h-full rounded-lg shadow-lg hover:shadow-xl transition-shadow cursor-move select-none"
+    class="w-full h-full rounded-lg shadow-lg hover:shadow-xl transition-shadow cursor-move select-none bg-white border-2 border-gray-200 overflow-hidden"
     :class="{
-      'border-primary/60 shadow-primary-100 overflow-hidden': isSelected,
-      'bg-white border-2 border-gray-200': !canvas.isClassicMode,
-      'bg-white border-2 border-black': canvas.isClassicMode,
+      'border-primary/60 shadow-primary-100': isSelected,
     }"
     @mousedown="startDrag"
   >
     <!-- Table Header -->
     <div
-      class="px-4 py-3 rounded-t-md"
-      :class="{
-        'bg-gradient-to-r from-ci-primary to-ci-secondary text-white':
-          !canvas.isClassicMode,
-        'bg-white text-black border-b border-black': canvas.isClassicMode,
-      }"
+      class="px-4 py-2 rounded-t-md bg-gradient-to-r from-ci-primary to-ci-secondary text-white"
+      :style="{ height: `${HEADER_HEIGHT}px` }"
     >
       <div class="flex items-center gap-2">
-        <div
-          class="w-3 h-3 rounded-sm"
-          :class="{
-            'bg-white/20': !canvas.isClassicMode,
-            'bg-black/20': canvas.isClassicMode,
-          }"
-        />
-        <h3 class="font-semibold text-sm">{{ table.name }}</h3>
+        <div class="w-3 h-3 rounded-sm bg-white/50" />
+        <h3 class="font-semibold text-base">{{ table.name }}</h3>
       </div>
     </div>
 
     <!-- Columns -->
-    <div
-      class="divide-y"
-      :class="{
-        'divide-gray-100': !canvas.isClassicMode,
-        'divide-black': canvas.isClassicMode,
-      }"
-    >
+    <div class="divide-y divide-gray-100">
       <div
         v-for="(column, index) in table.columns"
         :key="index"
-        class="px-4 py-2.5 transition-colors"
-        :class="{
-          'hover:bg-gray-50': !canvas.isClassicMode,
-          'hover:bg-gray-100': canvas.isClassicMode,
-        }"
+        class="px-4 py-2.5 transition-colors hover:bg-gray-50"
+        :style="{ height: `${ROW_HEIGHT}px` }"
       >
         <div class="flex items-center justify-between">
           <div class="flex items-center gap-2">
@@ -168,44 +130,17 @@ const onMouseUp = () => {
               </span>
             </div>
 
-            <span
-              class="text-sm font-medium"
-              :class="{
-                'text-gray-900': !canvas.isClassicMode,
-                'text-black': canvas.isClassicMode,
-              }"
-              >{{ column.name }}</span
-            >
+            <span class="text-sm font-medium text-gray-900">{{
+              column.name
+            }}</span>
           </div>
 
-          <div
-            class="text-xs"
-            :class="{
-              'text-gray-500': !canvas.isClassicMode,
-              'text-gray-600': canvas.isClassicMode,
-            }"
-          >
+          <div class="text-xs text-gray-500">
             {{
               column.length ? `${column.type}(${column.length})` : column.type
             }}
           </div>
         </div>
-
-        <!-- Constraints -->
-        <!-- <div v-if="column.isUnique || column.isNotNull" class="flex gap-1 mt-1">
-          <span
-            v-if="column.isUnique"
-            class="inline-flex px-1.5 py-0.5 text-xs font-medium text-blue-800 bg-blue-100 rounded"
-          >
-            UNIQUE
-          </span>
-          <span
-            v-if="column.isNotNull"
-            class="inline-flex px-1.5 py-0.5 text-xs font-medium text-red-800 bg-red-100 rounded"
-          >
-            NOT NULL
-          </span>
-        </div> -->
       </div>
     </div>
   </div>

@@ -46,18 +46,18 @@ const viewportRect = computed(() => {
 // Get table style based on mode and selection
 const getTableStyle = (table: Table) => {
   const isSelected = props.canvas.selectedTable === table.id;
-  
+
   if (props.canvas.isClassicMode) {
     return {
-      fill: isSelected ? '#000000' : '#ffffff',
-      stroke: isSelected ? '#374151' : '#000000',
-      strokeWidth: isSelected ? '2' : '1'
+      fill: isSelected ? "#000000" : "#ffffff",
+      stroke: isSelected ? "#374151" : "#000000",
+      strokeWidth: isSelected ? "2" : "1",
     };
   } else {
     return {
-      fill: isSelected ? '#3b82f6' : '#e5e7eb',
-      stroke: isSelected ? '#1d4ed8' : '#9ca3af',
-      strokeWidth: isSelected ? '2' : '1'
+      fill: isSelected ? "#3b82f6" : "#e5e7eb",
+      stroke: isSelected ? "#1d4ed8" : "#9ca3af",
+      strokeWidth: isSelected ? "2" : "1",
     };
   }
 };
@@ -66,14 +66,10 @@ const getTableStyle = (table: Table) => {
 <template>
   <div
     v-if="tables.length > 0"
-    class="absolute top-4 right-4 w-48 h-32 backdrop-blur-sm rounded-lg shadow-lg z-20 overflow-hidden transition-all duration-200 hover:shadow-xl"
-    :class="{
-      'bg-white/95 border border-gray-200': !canvas.isClassicMode,
-      'bg-blue-50/95 border border-gray-400': canvas.isClassicMode,
-    }"
+    class="bg-white/95 border border-gray-200 absolute top-4 right-4 w-48 h-32 backdrop-blur-sm rounded-lg shadow-lg z-20 overflow-hidden transition-all duration-200 hover:shadow-xl"
   >
     <!-- Header -->
-    <div 
+    <div
       class="p-2 text-xs font-medium border-b transition-colors duration-200"
       :class="{
         'text-gray-600 border-gray-200 bg-gray-50/50': !canvas.isClassicMode,
@@ -82,12 +78,14 @@ const getTableStyle = (table: Table) => {
     >
       <div class="flex items-center justify-between">
         <span>Overview</span>
-        <span class="text-[10px] text-gray-500">{{ tables.length }} tables</span>
+        <span class="text-[10px] text-gray-500"
+          >{{ tables.length }} tables</span
+        >
       </div>
     </div>
-    
+
     <!-- Minimap Content -->
-    <div 
+    <div
       class="relative w-full h-24 transition-colors duration-200"
       :class="{
         'bg-gray-50': !canvas.isClassicMode,
@@ -109,14 +107,18 @@ const getTableStyle = (table: Table) => {
             class="transition-all duration-150"
           />
         </g>
-        
+
         <!-- Viewport indicator -->
         <rect
           :x="viewportRect.x"
           :y="viewportRect.y"
           :width="viewportRect.width"
           :height="viewportRect.height"
-          :fill="canvas.isClassicMode ? 'rgba(0, 0, 0, 0.1)' : 'rgba(59, 130, 246, 0.1)'"
+          :fill="
+            canvas.isClassicMode
+              ? 'rgba(0, 0, 0, 0.1)'
+              : 'rgba(59, 130, 246, 0.1)'
+          "
           :stroke="canvas.isClassicMode ? '#374151' : '#3b82f6'"
           stroke-width="2"
           rx="2"

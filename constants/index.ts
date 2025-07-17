@@ -1,4 +1,5 @@
 export const ROW_HEIGHT = 42;
+export const HEADER_HEIGHT = 42;
 
 export const IE_MARKER_MAP: Record<string, Record<string, string>> = {
   "one-to-one": {

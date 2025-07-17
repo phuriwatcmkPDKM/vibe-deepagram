@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { IE_MARKER_MAP, ROW_HEIGHT } from "~/constants";
+import { HEADER_HEIGHT, IE_MARKER_MAP, ROW_HEIGHT } from "~/constants";
 import type { Relationship, DragMoveEvent } from "~/types/schema";
 
 const schemaStore = useSchemaStore();
@@ -185,7 +185,7 @@ const relationshipPaths = computed(() => {
     );
 
     // Calculate precise connection points based on updated row height (42px)
-    const headerHeight = 40;
+    const headerHeight = HEADER_HEIGHT;
     const rowHeight = ROW_HEIGHT;
     const rowCenter = rowHeight / 2;
 
@@ -353,8 +353,8 @@ const getCardinalityPosition = (
   );
 
   // Calculate connection points (same as in relationshipPaths)
-  const headerHeight = 40;
-  const rowHeight = 42;
+  const headerHeight = HEADER_HEIGHT;
+  const rowHeight = ROW_HEIGHT;
   const rowCenter = rowHeight / 2;
 
   const fromY =

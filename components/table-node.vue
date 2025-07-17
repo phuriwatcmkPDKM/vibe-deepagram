@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ROW_HEIGHT } from "~/constants";
+import { HEADER_HEIGHT, ROW_HEIGHT } from "~/constants";
 import type { Table, DragMoveEvent } from "~/types/schema";
 
 interface Props {
@@ -24,7 +24,7 @@ const { canvas } = storeToRefs(schemaStore);
 
 // Computed height based on columns
 const calculatedHeight = computed(() => {
-  const headerHeight = 40; // Table header height
+  const headerHeight = HEADER_HEIGHT; // Table header height
   const rowHeight = ROW_HEIGHT; // Each column row height
   return headerHeight + props.table.columns.length * rowHeight;
 });
@@ -116,7 +116,7 @@ const onMouseUp = () => {
     <div
       class="px-4 py-3 rounded-t-md"
       :class="{
-        'bg-gradient-to-r from-purple-500 to-indigo-600 text-white':
+        'bg-gradient-to-r from-ci-primary to-ci-secondary text-white':
           !canvas.isClassicMode,
         'bg-white text-black border-b border-black': canvas.isClassicMode,
       }"

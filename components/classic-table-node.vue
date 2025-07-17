@@ -94,7 +94,7 @@ const onMouseUp = () => {
   >
     <!-- Table Header -->
     <div
-      class="px-2 py-1 border-b-2 border-black bg-gray-300 flex items-center justify-center"
+      class="px-2 py-1 border-b-2 border-black bg-gray-200 flex items-center justify-center"
       :style="{ height: `${HEADER_HEIGHT}px` }"
     >
       <h3 class="font-bold text-base text-black text-center">
@@ -121,9 +121,11 @@ const onMouseUp = () => {
         <!-- Field Column -->
         <div class="flex-1 px-2 py-1 flex items-center justify-between">
           <span class="text-black font-mono">{{ column.name }}</span>
-          <span class="text-[10px] text-gray-600 font-mono">{{
-            column.type
-          }}</span>
+          <span class="text-[10px] text-gray-600 font-mono">
+            {{
+              column.length ? `${column.type}(${column.length})` : column.type
+            }}</span
+          >
         </div>
       </div>
     </div>

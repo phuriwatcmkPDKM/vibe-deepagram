@@ -23,11 +23,8 @@ const emit = defineEmits<Emits>();
 const calculatedHeight = computed(() => {
   const headerHeight = HEADER_HEIGHT; // Table header height
   const rowHeight = ROW_HEIGHT; // Each column row height
-  if (props.table.columns.length <= 2) {
-    return headerHeight + props.table.columns.length * rowHeight + 8;
-  } else {
-    return headerHeight + props.table.columns.length * rowHeight + 2;
-  }
+
+  return headerHeight + props.table.columns.length * rowHeight;
 });
 
 // Dragging state
@@ -98,7 +95,8 @@ const onMouseUp = () => {
   >
     <!-- Table Header -->
     <div
-      class="px-4 py-3 rounded-t-md bg-gradient-to-r from-ci-primary to-ci-secondary text-white"
+      class="px-4 py-2 rounded-t-md bg-gradient-to-r from-ci-primary to-ci-secondary text-white"
+      :style="{ height: `${HEADER_HEIGHT}px` }"
     >
       <div class="flex items-center gap-2">
         <div class="w-3 h-3 rounded-sm bg-white/50" />
@@ -112,6 +110,7 @@ const onMouseUp = () => {
         v-for="(column, index) in table.columns"
         :key="index"
         class="px-4 py-2.5 transition-colors hover:bg-gray-50"
+        :style="{ height: `${ROW_HEIGHT}px` }"
       >
         <div class="flex items-center justify-between">
           <div class="flex items-center gap-2">

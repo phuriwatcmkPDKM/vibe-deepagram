@@ -1,10 +1,13 @@
+import { useCookie } from "nuxt/app";
 import type { ItemResponse } from "~/types";
 
 export function useToken() {
   const config = useRuntimeConfig();
+
   const token = useCookie(config.public.accessTokenCookieName, {
     expires: new Date(Date.now() + 1000 * 60 * 60 * 24 * 7),
   });
+
   const refreshToken = useCookie(config.public.refreshTokenCookieName, {
     expires: new Date(Date.now() + 1000 * 60 * 60 * 24 * 7),
   });
@@ -36,38 +39,33 @@ export function useToken() {
           refreshToken: string;
         }>
       >("/auth/refresh-token", {
-        baseURL: `${config.public.baseUrl}`,
+        baseURL: `${config.public.refreshUrl}`,
         method: "POST",
-        body: { refreshToken: refreshToken.value },
+        body: { accessToken: token, refreshToken },
       });
+
       if (error.value) {
-        throw new Error(
-          `Token refresh failed: ${error.value.message || "Unknown error"}`
-        );
+        throw error;
       }
+
       if (!data.value?.data) {
         throw new Error("API not response item");
       }
+
       const { accessToken: newAccessToken, refreshToken: newRefreshToken } =
         data.value.data.item;
+
       if (!newAccessToken) {
         throw new Error("API not response access token");
       }
-      // Validate new access token format
-      if (
-        !newAccessToken.includes(".") ||
-        newAccessToken.split(".").length !== 3
-      ) {
-        throw new Error("Invalid access token format received");
-      }
+
       setToken(newAccessToken);
+
       if (newRefreshToken) {
         setRefreshToken(newRefreshToken);
       }
     } catch (error) {
       clear();
-      console.error("Token refresh failed:", error);
-      navigateTo(config.public.authUrl);
       return error;
     }
   }
@@ -75,6 +73,7 @@ export function useToken() {
   function clear() {
     setToken(null);
     setRefreshToken(null);
+    // navigateTo(config.public.authUrl, { external: true, replace: true });
   }
 
   return {

@@ -41,8 +41,12 @@ export function useApi<T = unknown>(
       options.headers = headers;
     },
 
-    async onResponseError({ response }) {
+    async onResponseError({ request, response }) {
       if (response.status === 401) {
+        if (request.toString().includes("/refresh-token")) {
+          token.clear();
+          return;
+        }
         await token.refresh();
       }
     },

@@ -904,10 +904,18 @@ onBeforeUnmount(() => {
             height: `${table.height}px`,
           }"
         >
-          <table-node
+          <classic-table-node
+            v-if="canvas.isClassicMode"
             :table="table"
             :is-selected="canvas.selectedTable === table.id"
-            :scale="canvas.scale"
+            @drag-start="handleTableDragStart"
+            @drag-move="handleTableDragMove"
+            @drag-end="handleTableDragEnd"
+          />
+          <modern-table-node
+            v-else
+            :table="table"
+            :is-selected="canvas.selectedTable === table.id"
             @drag-start="handleTableDragStart"
             @drag-move="handleTableDragMove"
             @drag-end="handleTableDragEnd"
